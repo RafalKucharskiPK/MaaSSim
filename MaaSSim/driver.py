@@ -179,6 +179,10 @@ class VehicleAgent(object):
                 break
 
 
+# ######### #
+# FUNCTIONS #
+# ######### #
+
 def f_vehout(*args, **kwargs):
     # it uses veh_exp of a vehicle populated in previous run
     # returns boolean True if vehicle decides to opt out
@@ -204,6 +208,5 @@ def f_decline(*args, **kwargs):
     skim = kwargs.get('skim', None)
     quan = 0.5
 
-    # ----
     limit = skim[pos].loc[request_nodes].quantile(quan)  # mean ditance to all the nodes
     return pickup_time >= limit

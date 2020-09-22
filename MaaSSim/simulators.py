@@ -81,7 +81,7 @@ def simulate(config="../data/config/default.json", inData=None, params=None, **k
     """
 
     if inData is None:  # othwesie we use what is passed
-        from .utils import structures
+        from .data_structures import structures
         inData = structures.copy()  # fresh data
     if params is None:
         params = get_config(config)  # load from .json file

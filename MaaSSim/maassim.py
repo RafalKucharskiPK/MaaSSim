@@ -32,11 +32,13 @@ class Simulator:
 
     def __init__(self, _inData, **kwargs):
         # STATICS and kwargs
+        # list of functionalities
+        # that may be filled with functions to represent desired behaviour
         self.FNAMES = ['print', 'params', 'f_match', 'f_trav_out',
                        'f_driver_learn', 'f_driver_out', 'f_trav_mode', 'f_driver_decline', 'f_platform_choice',
-                       'f_driver_repos', 'f_timeout', 'kpi_pax', 'kpi_veh']  # list of functionalities
-        # that may be filled with functions to represent behaviour
-        self.arguments = {'print': False,
+                       'f_driver_repos', 'f_timeout', 'kpi_pax', 'kpi_veh']
+
+        self.default_args = {'print': False,
                           'params': None,
                           'f_match': f_match,
                           'f_trav_out': dummy_False,
@@ -46,9 +48,9 @@ class Simulator:
                           'f_driver_decline': dummy_False,
                           'f_driver_repos': f_repos,
                           'f_timeout': self.timeout,
-                          'kpi_pax': kpi_pax,
-                          'kpi_veh': kpi_veh,
-                          'monitor': True}
+                             'kpi_pax': kpi_pax,
+                             'kpi_veh': kpi_veh,
+                             'monitor': True}
 
         # input
         self.inData = _inData.copy()  # copy of data structure for simulations (copy needed for multithreading)
@@ -74,13 +76,13 @@ class Simulator:
 
     def myinit(self, **kwargs):
         # part of init that is repeated every run
-        self.arguments.update(kwargs)
-        self.params = self.arguments['params']  # json dict with parameters
+        self.default_args.update(kwargs)
+        self.params = self.default_args['params']  # json dict with parameters
 
         # populate functions
-        for f in self.arguments.keys():
+        for f in self.default_args.keys():
             if f in self.FNAMES:
-                self.functions[f] = self.arguments[f]
+                self.functions[f] = self.default_args[f]
 
         self.make_skims()
         self.set_variabilities()

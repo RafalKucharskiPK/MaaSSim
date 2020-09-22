@@ -192,8 +192,44 @@ class PassengerAgent(object):
         self.sim.logger.info(self.msg)
         # self.update(event = travellerEvent.EXIT)
 
+# ######### #
+# FUNCTIONS #
+# ######### #
 
-# FUNCTIONS
+def f_platform_opt_out(*args, **kwargs):
+    pax = kwargs.get('pax', None)
+    return pax.request.platform == -1
+
+
+def f_out(*args, **kwargs):
+    # it uses pax_exp of a passenger populated in previous run
+    # prev_exp is a pd.Series of this pd.DataFrame
+    # pd.DataFrame(columns=['wait_pickup','wait_match','tt'])
+    # returns boolean True if passanger decides to opt out
+    prev_exp = kwargs.get('prev_exp', None)
+    if prev_exp is None:
+        # no prev exepreince
+        return False
+    else:
+        if prev_exp.iloc[0].outcome == 1:
+            return False
+        else:
+            return True
+
+
+def f_mode(*args, **kwargs):
+    # returns boolean True if passenger decides not to use MaaS (bad offer)
+    offer = kwargs.get('offer', None)
+    delta = 0.5
+    trip = kwargs.get('trip')
+
+    pass_walk_time = trip.pass_walk_time
+    veh_pickup_time = trip.sim.skims.ride[trip.veh.pos][trip.request.origin]
+    pass_matching_time = trip.sim.env.now - trip.t_matching
+    tt = trip.request.ttrav
+    return (max(pass_walk_time, veh_pickup_time) + pass_matching_time) / tt.seconds > delta
+
+
 def f_platform_choice(*args, **kwargs):
     sim = kwargs.get('sim')
     traveller = kwargs.get('traveller')
@@ -244,37 +280,3 @@ def f_platform_choice(*args, **kwargs):
                                                                                                      'fare'] * 100) / 100),
                                                      sim.print_now()))
     return platform_chosen == -1
-
-
-def f_platform_opt_out(*args, **kwargs):
-    pax = kwargs.get('pax', None)
-    return pax.request.platform == -1
-
-
-def f_out(*args, **kwargs):
-    # it uses pax_exp of a passenger populated in previous run
-    # prev_exp is a pd.Series of this pd.DataFrame
-    # pd.DataFrame(columns=['wait_pickup','wait_match','tt'])
-    # returns boolean True if passanger decides to opt out
-    prev_exp = kwargs.get('prev_exp', None)
-    if prev_exp is None:
-        # no prev exepreince
-        return False
-    else:
-        if prev_exp.iloc[0].outcome == 1:
-            return False
-        else:
-            return True
-
-
-def f_mode(*args, **kwargs):
-    # returns boolean True if passenger decides not to use MaaS (bad offer)
-    offer = kwargs.get('offer', None)
-    delta = 0.5
-    trip = kwargs.get('trip')
-
-    pass_walk_time = trip.pass_walk_time
-    veh_pickup_time = trip.sim.skims.ride[trip.veh.pos][trip.request.origin]
-    pass_matching_time = trip.sim.env.now - trip.t_matching
-    tt = trip.request.ttrav
-    return (max(pass_walk_time, veh_pickup_time) + pass_matching_time) / tt.seconds > delta
