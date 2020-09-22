@@ -1,7 +1,7 @@
 ################################################################################
 # Module: runners.py
-# Description: Wrppers to prepare and run simulations
-# Rafal Kucharski @ TU Delft, The Netherlands
+# Description: Wrappers to prepare and run simulations
+# Rafal Kucharski @ TU Delft
 ################################################################################
 
 

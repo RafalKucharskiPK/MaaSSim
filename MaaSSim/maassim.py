@@ -217,7 +217,7 @@ class Simulator:
                 elif travellerEvent.REJECTS_OFFER.name in trip.event.values:
                     flag = True
                 assert flag == True
-        self.logger.warn('assertion tests for simulation results - passed')
+        self.logger.warning('assertion tests for simulation results - passed')
         # except:
         #     self.logger.info('assertion tests for simulation results - failed')
         #     swwssw

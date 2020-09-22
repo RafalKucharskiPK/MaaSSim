@@ -1,15 +1,16 @@
-'''
-Reusable functions and methods used throughout the simulator
-'''
+################################################################################
+# Module: utils.py
+# Reusable functions and methods used throughout the simulator
+# Rafal Kucharski @ TU Delft
+################################################################################
+
 import pandas as pd
 from dotmap import DotMap
 import math
 import random
-import logging
 import numpy as np
 import os
 
-#from osmnx.utils import get_nearest_node
 from osmnx.distance import get_nearest_node
 import osmnx as ox
 import networkx as nx
@@ -20,12 +21,15 @@ from .traveller import travellerEvent
 from .driver import driverEvent
 
 
-
 def dummy_False(*args, **kwargs):
+    # dummy function to always return False,
+    # used as default function inside of functionality
+    # (if the behaviour is not modelled)
     return False
 
 
 def dummy_True(*args, **kwargs):
+    # dummy function to always return True
     return True
 
 
@@ -39,11 +43,11 @@ def generic_generator(generator, n):
     return pd.concat([generator(i) for i in range(1, n + 1)], axis=1, keys=range(1, n + 1)).T
 
 
-def empty_series(df, id=None):
+def empty_series(df, name=None):
     # returns empty Series from a given DataFrame, to be used for consistency of adding new rows to DataFrames
-    if id is None:
-        id = len(df.index) + 1
-    return pd.Series(index=df.columns, name=id)
+    if name is None:
+        name = len(df.index) + 1
+    return pd.Series(index=df.columns, name=name)
 
 
 def initialize_df(df):
@@ -66,9 +70,9 @@ def get_config(path):
         return DotMap(data)
 
 
-def save_config(_params, path = None):
+def save_config(_params, path=None):
     if path is None:
-        path = os.path.join(_params.paths.params,_params.NAME+".json")
+        path = os.path.join(_params.paths.params, _params.NAME + ".json")
     with open(path, "w") as write_file:
         json.dump(_params, write_file)
 
@@ -90,26 +94,26 @@ def networkstats(inData):
     center_x = pd.DataFrame((inData.G.nodes(data='x')))[1].mean()
     center_y = pd.DataFrame((inData.G.nodes(data='y')))[1].mean()
 
-    nearest = get_nearest_node(inData.G, [center_y, center_x])
+    nearest = get_nearest_node(inData.G, (center_y, center_x))
     ret = DotMap({'center': nearest, 'radius': inData.skim[nearest].quantile(0.75)})
     return ret
 
 
-def load_G(inData, _params=None, stats=False, set_t=True):
-    # loads graph and skim from a file
+def load_G(_inData, _params=None, stats=True, set_t=True):
+    # loads graph and skim from a params paths
     if set_t:
         _params = set_t0(_params)
-    inData.G = ox.load_graphml(_params.paths.G)
-    inData.nodes = pd.DataFrame.from_dict(dict(inData.G.nodes(data=True)), orient='index')
+    _inData.G = ox.load_graphml(_params.paths.G)
+    _inData.nodes = pd.DataFrame.from_dict(dict(_inData.G.nodes(data=True)), orient='index')
     skim = pd.read_csv(_params.paths.skim, index_col='Unnamed: 0')
     skim.columns = [int(c) for c in skim.columns]
-    inData.skim = skim
+    _inData.skim = skim
     if stats:
-        inData.stats = networkstats(inData)  # calculate center of network, radius and central node
-    return inData
+        _inData.stats = networkstats(_inData)  # calculate center of network, radius and central node
+    return _inData
 
 
-def generate_vehicles(inData_, nV):
+def generate_vehicles(_inData, nV):
     """
     generates single vehicle (database row with structure defined in DataStructures)
     index is consecutive number if dataframe
@@ -118,14 +122,14 @@ def generate_vehicles(inData_, nV):
     """
     vehs = list()
     for i in range(nV + 1):
-        vehs.append(empty_series(inData_.vehicles, id=i))
+        vehs.append(empty_series(_inData.vehicles, name=i))
 
     vehs = pd.concat(vehs, axis=1, keys=range(1, nV + 1)).T
     vehs.event = driverEvent.STARTS_DAY
     vehs.platform = 0
     vehs.shift_start = 0
     vehs.shift_end = 60 * 60 * 24
-    vehs.pos = vehs.pos.apply(lambda x: int(rand_node(inData_.nodes)))
+    vehs.pos = vehs.pos.apply(lambda x: int(rand_node(_inData.nodes)))
 
     return vehs
 
@@ -142,9 +146,11 @@ def generate_demand(_inData, _params=None, avg_speed=False):
     distances = _inData.skim[_inData.stats['center']].to_frame().dropna()  # compute distances from center
     distances.columns = ['distance']
     distances = distances[distances['distance'] < _params.dist_threshold]
+    # apply negative exponential distributions
     distances['p_origin'] = distances['distance'].apply(lambda x:
                                                         math.exp(
-                                                            _params.demand_structure.origins_dispertion * x))  # apply negative exponential distributions
+                                                            _params.demand_structure.origins_dispertion * x))
+
     distances['p_destination'] = distances['distance'].apply(
         lambda x: math.exp(_params.demand_structure.destinations_dispertion * x))
     if _params.demand_structure.temporal_distribution == 'uniform':
@@ -154,6 +160,8 @@ def generate_demand(_inData, _params=None, avg_speed=False):
         treq = np.random.normal(_params.simTime * 60 * 60 / 2,
                                 _params.demand_structure.temporal_dispertion * _params.simTime * 60 * 60 / 2,
                                 _params.nP)  # apply normal distribution on request times
+    else:
+        treq = None
     requests.treq = [_params.t0 + pd.Timedelta(int(_), 's') for _ in treq]
     requests.origin = list(
         distances.sample(_params.nP, weights='p_origin', replace=True).index)  # sample origin nodes from a distribution
@@ -163,10 +171,12 @@ def generate_demand(_inData, _params=None, avg_speed=False):
     requests['dist'] = requests.apply(lambda request: _inData.skim.loc[request.origin, request.destination], axis=1)
     while len(requests[requests.dist >= _params.dist_threshold]) > 0:
         requests.origin = requests.apply(lambda request: (distances.sample(1, weights='p_origin').index[0]
-                                                          if request.dist >= _params.dist_threshold else request.origin),
+                                                          if request.dist >= _params.dist_threshold else
+                                                          request.origin),
                                          axis=1)
         requests.destination = requests.apply(lambda request: (distances.sample(1, weights='p_destination').index[0]
-                                                               if request.dist >= _params.dist_threshold else request.destination),
+                                                               if request.dist >= _params.dist_threshold else
+                                                               request.destination),
                                               axis=1)
         requests.dist = requests.apply(lambda request: _inData.skim.loc[request.origin, request.destination], axis=1)
 
@@ -188,203 +198,44 @@ def generate_demand(_inData, _params=None, avg_speed=False):
     return _inData
 
 
-def prep_supply_and_demand(inData, params):
-    inData = generate_demand(inData, params, avg_speed=True)
-    inData.vehicles = generate_vehicles(inData, params.nV)
-    inData.vehicles.platform = inData.vehicles.apply(lambda x: 0, axis=1)
-    inData.passengers.platforms = inData.passengers.apply(lambda x: [0], axis=1)
-    inData.requests['platform'] = inData.requests.apply(lambda row: inData.passengers.loc[row.name].platforms[0],
-                                                        axis=1)
-
-    inData.platforms = initialize_df(inData.platforms)
-    inData.platforms.loc[0] = [1, 'Platform', 1]
-    return inData
-
-
-
-def plot_map_rides(G, ts, light=True, m_size=30, lw=3):
-    def add_route(ax, route, color='grey', lw=2, alpha=0.5):
-        # plots route on the graph alrready plotted on ax
-        edge_nodes = list(zip(route[:-1], route[1:]))
-        lines = []
-        for u, v in edge_nodes:
-            # if there are parallel edges, select the shortest in length
-            data = min(G.get_edge_data(u, v).values(), key=lambda x: x['length'])
-            # if it has a geometry attribute (ie, a list of line segments)
-            if 'geometry' in data:
-                # add them to the list of lines to plot
-                xs, ys = data['geometry'].xy
-                lines.append(list(zip(xs, ys)))
-            else:
-                # if it doesn't have a geometry attribute, the edge is a straight
-                # line from node to node
-                x1 = G.nodes[u]['x']
-                y1 = G.nodes[u]['y']
-                x2 = G.nodes[v]['x']
-                y2 = G.nodes[v]['y']
-                line = [(x1, y1), (x2, y2)]
-                lines.append(line)
-        lc = LineCollection(lines, colors=color, linewidths=lw, alpha=alpha, zorder=3)
-        ax.add_collection(lc)
-
-    fig, ax = ox.plot_graph(G, figsize = (15,15), node_size=0, edge_linewidth=0.3,
-                            show=False, close=False,
-                            edge_color='grey')
-
-    colors = {1: 'orange', 2: 'teal', 3: 'maroon', 4: 'black', 5: 'green'}
-    for t in ts:
-        orig_points_lats, orig_points_lons, dest_points_lats, dest_points_lons = [], [], [], []
-        deg = t.req_id.nunique() - 1
-        for i in t.req_id.dropna().unique():
-            r = t[t.req_id == i]
-            o = r[r.od == 'o'].iloc[0].node
-            d = r[r.od == 'd'].iloc[0].node
-            ax.scatter(G.nodes[o]['x'], G.nodes[o]['y'], s=m_size, c='black', marker='x')
-            ax.scatter(G.nodes[d]['x'], G.nodes[d]['y'], s=m_size, c='black', marker='v')
-
-            if not light:
-                ax.annotate('o' + str(i), (G.nodes[o]['x'] * 1.0002, G.nodes[o]['y'] * 1.00001))
-                ax.annotate('d' + str(i), (G.nodes[d]['x'] * 1.0002, G.nodes[d]['y'] * 1.00001))
-                route = nx.shortest_path(G, o, d, weight='length')
-
-                add_route(ax, route, color='black', lw=lw / 2, alpha=0.5)
-
-        routes = list()  # ride segments
-        o = t.node.dropna().values[0]
-
-        for d in t.node.dropna().values[1:]:
-            routes.append(nx.shortest_path(G, o, d, weight='length'))
-            o = d
-        for route in routes:
-            add_route(ax, route, color=colors[deg], lw=lw, alpha=0.7)
-
-
-def plot_demand(inData, t0=None, vehicles=False, s=10, params = None):
-    import matplotlib.pyplot as plt
-    if t0 is None:
-        t0 = inData.requests.treq.mean()
-
-    # plot osmnx graph, its center, scattered nodes of requests origins and destinations
-    # plots requests temporal distribution
-    fig, ax = plt.subplots(1, 3)
-    ((t0 - inData.requests.treq) / np.timedelta64(1, 'h')).plot.kde(title='Temporal distribution', ax=ax[0])
-    (inData.requests.ttrav / np.timedelta64(1, 'm')).plot(kind='box', title='Trips travel times [min]', ax=ax[1])
-    inData.requests.dist.plot(kind='box', title='Trips distance [m]', ax=ax[2])
-    # (inData.requests.ttrav / np.timedelta64(1, 'm')).describe().to_frame().T
-    plt.show()
-    fig, ax = ox.plot_graph(inData.G, figsize=(15,15), node_size=0, edge_linewidth=0.5,
-                            show=False, close=False,
-                            edge_color='grey', bgcolor = 'white')
-    for _, r in inData.requests.iterrows():
-        ax.scatter(inData.G.nodes[r.origin]['x'], inData.G.nodes[r.origin]['y'], c='green', s=s, marker='D')
-        ax.scatter(inData.G.nodes[r.destination]['x'], inData.G.nodes[r.destination]['y'], c='orange', s=s)
-    if vehicles:
-        for _, r in inData.vehicles.iterrows():
-            ax.scatter(inData.G.nodes[r.pos]['x'], inData.G.nodes[r.pos]['y'], c='blue', s=s, marker='x')
-    ax.scatter(inData.G.nodes[inData.stats['center']]['x'], inData.G.nodes[inData.stats['center']]['y'], c='red',
-               s=10 * s, marker='+')
-    plt.title(
-        'Demand in {} with origins marked in green, destinations in orange and vehicles in blue'.format(params.city))
-    plt.show()
-
-
-def add_route(G, ax, route, color='grey', lw=2, alpha=0.5, key = 'length'):
-    # plots route on the graph alrready plotted on ax
-    edge_nodes = list(zip(route[:-1], route[1:]))
-    lines = []
-    for u, v in edge_nodes:
-        # if there are parallel edges, select the shortest in length
-        data = min(G.get_edge_data(u, v).values(), key=lambda x: x[key])
-        # if it has a geometry attribute (ie, a list of line segments)
-        if 'geometry' in data:
-            # add them to the list of lines to plot
-            xs, ys = data['geometry'].xy
-            lines.append(list(zip(xs, ys)))
-        else:
-            # if it doesn't have a geometry attribute, the edge is a straight
-            # line from node to node
-            x1 = G.nodes[u]['x']
-            y1 = G.nodes[u]['y']
-            x2 = G.nodes[v]['x']
-            y2 = G.nodes[v]['y']
-            line = [(x1, y1), (x2, y2)]
-            lines.append(line)
-    lc = LineCollection(lines, colors=color, linewidths=lw, alpha=alpha, zorder=3)
-    ax.add_collection(lc)
-    return ax
-
-
-
-def plot_veh(G, t, light=True, m_size=30, lw=2):
-    def add_route(ax, route, color='grey', lw=2, alpha=0.5):
-        # plots route on the graph alrready plotted on ax
-        edge_nodes = list(zip(route[:-1], route[1:]))
-        lines = []
-        for u, v in edge_nodes:
-            # if there are parallel edges, select the shortest in length
-            data = min(G.get_edge_data(u, v).values(), key=lambda x: x['length'])
-            # if it has a geometry attribute (ie, a list of line segments)
-            if 'geometry' in data:
-                # add them to the list of lines to plot
-                xs, ys = data['geometry'].xy
-                lines.append(list(zip(xs, ys)))
-            else:
-                # if it doesn't have a geometry attribute, the edge is a straight
-                # line from node to node
-                x1 = G.nodes[u]['x']
-                y1 = G.nodes[u]['y']
-                x2 = G.nodes[v]['x']
-                y2 = G.nodes[v]['y']
-                line = [(x1, y1), (x2, y2)]
-                lines.append(line)
-        lc = LineCollection(lines, colors=color, linewidths=lw, alpha=alpha, zorder=3)
-        ax.add_collection(lc)
-
-    fig, ax = ox.plot_graph(G, figsize =(15, 15), node_size=0, edge_linewidth=0.3,
-                            show=False, close=False,
-                            edge_color='grey', bgcolor = 'white')
-
-    t['node'] = t.pos
-
-    degs = t.apply(lambda x: len(x.paxes), axis=1)
-    color_empty = 'lightsalmon'
-    color_full = 'sienna'
-
-    routes = list()  # ride segments
-    o = t.node.dropna().values[0]
-    ax.scatter(G.nodes[o]['x'], G.nodes[o]['y'], s=m_size, c='black', marker='x')
-    row = t.iloc[0]
-    ax.annotate("t:{}, paxes: {} {}".format(int(row.t), row.paxes, row.event),
-                (G.nodes[o]['x'] * 1.0002, G.nodes[o]['y'] * 1.00001))
-
-    for row in t.iloc[1:].iterrows():
-        d = row[1].pos
-        if o != d:
-            ax.scatter(G.nodes[d]['x'], G.nodes[d]['y'], s=m_size, c='black', marker='x')
-            ax.annotate("t:{}, paxes: {} {}".format(int(row[1].t), row[1].paxes, row[1].event),
-                        (G.nodes[d]['x'] * 1.0002, G.nodes[d]['y'] * 1.00001))
-        routes.append(nx.shortest_path(G, o, d, weight='length'))
-        o = d
-    for i, route in enumerate(routes):
-        add_route(ax, route, color=color_empty if degs[i + 1] == 0 else color_full, lw=lw + degs[i + 1] ** 2 / 2,
-                  alpha=0.9)
-
-
-def make_config_paths(params,main = None):
+def make_config_paths(params, main=None):
     # call it whenever you change a city name, or main path
     import os
     if main is None:
-        main = os.path.join(os.getcwd(),"../..")
-    params.paths.main = os.path.abspath(main) # main repo folder
-    params.paths.data = os.path.join(params.paths.main,'data') # data folder (not synced with repo)
-    params.paths.params = os.path.join(params.paths.data,'configs')
-    params.paths.postcodes = os.path.join(params.paths.data,'postcodes',"PC4_Nederland_2015.shp") # PCA4 codes shapefile
-    params.paths.albatross = os.path.join(params.paths.data,'albatross') #albatross data
-    params.paths.sblt = os.path.join(params.paths.data,'sblt') #sblt results
-    params.paths.G = os.path.join(params.paths.data,'graphs',params.city.split(",")[0]+".graphml") #graphml of a current .city
-    params.paths.skim = os.path.join(params.paths.main,'data','graphs',params.city.split(",")[0]+".csv") #csv with a skim between the nodes of the .city
-    params.paths.NYC = os.path.join(params.paths.main,'data','fhv_tripdata_2018-01.csv') #csv with a skim between the nodes of the .city
+        main = os.path.join(os.getcwd(), "../..")
+    params.paths.main = os.path.abspath(main)  # main repo folder
+    params.paths.data = os.path.join(params.paths.main, 'data')  # data folder (not synced with repo)
+    params.paths.params = os.path.join(params.paths.data, 'configs')
+    params.paths.postcodes = os.path.join(params.paths.data, 'postcodes',
+                                          "PC4_Nederland_2015.shp")  # PCA4 codes shapefile
+    params.paths.albatross = os.path.join(params.paths.data, 'albatross')  # albatross data
+    params.paths.sblt = os.path.join(params.paths.data, 'sblt')  # sblt results
+    params.paths.G = os.path.join(params.paths.data, 'graphs',
+                                  params.city.split(",")[0] + ".graphml")  # graphml of a current .city
+    params.paths.skim = os.path.join(params.paths.main, 'data', 'graphs', params.city.split(",")[
+        0] + ".csv")  # csv with a skim between the nodes of the .city
+    params.paths.NYC = os.path.join(params.paths.main, 'data',
+                                    'fhv_tripdata_2018-01.csv')  # csv with a skim between the nodes of the .city
     return params
+
+
+def prep_supply_and_demand(_inData, params):
+    _inData = generate_demand(_inData, params, avg_speed=True)
+    _inData.vehicles = generate_vehicles(_inData, params.nV)
+    _inData.vehicles.platform = _inData.vehicles.apply(lambda x: 0, axis=1)
+    _inData.passengers.platforms = _inData.passengers.apply(lambda x: [0], axis=1)
+    _inData.requests['platform'] = _inData.requests.apply(lambda row: _inData.passengers.loc[row.name].platforms[0],
+                                                          axis=1)
+
+    _inData.platforms = initialize_df(_inData.platforms)
+    _inData.platforms.loc[0] = [1, 'Platform', 1]
+    return _inData
+
+
+#################
+# PARALLEL RUNS #
+#################
+
 
 def test_space():
     # to see if code works
@@ -394,7 +245,7 @@ def test_space():
 
 
 def slice_space(s, replications=1, _print=False):
-    # util to feed the np.optimize.brute
+    # util to feed the np.optimize.brute with a search space
     def sliceme(l):
         return slice(0, len(l), 1)
 
@@ -411,4 +262,3 @@ def slice_space(s, replications=1, _print=False):
         ret += [slice(0, replications, 1)]
     print('Search space to explore of dimensions {} and total size of {}'.format(sizes, size)) if _print else None
     return tuple(ret)
-
