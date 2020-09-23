@@ -6,4 +6,3 @@ pandas==1.0.5
 seaborn==0.10.1
 scipy==1.4.1
 dotmap==1.2.20
-osmnx==0.15.1
