@@ -200,7 +200,6 @@ def generate_demand(_inData, _params=None, avg_speed=False):
 
 def make_config_paths(params, main=None):
     # call it whenever you change a city name, or main path
-    import os
     if main is None:
         main = os.path.join(os.getcwd(), "../..")
     params.paths.main = os.path.abspath(main)  # main repo folder

@@ -3,7 +3,8 @@
 * (c) TU Delft, Critical MaaS ERC grant
 * contributors: Rafal Kucharski, Oded Cats, Arjan de Ruijter ....
 
-
+[![CodeFactor](https://www.codefactor.io/repository/github/rafalkucharskipk/maassim/badge)](https://www.codefactor.io/repository/github/rafalkucharskipk/maassim)
+[![Coverage Status](https://coveralls.io/repos/github/RafalKucharskiPK/MaaSSim/badge.svg?branch=master)](https://coveralls.io/github/RafalKucharskiPK/MaaSSim?branch=master)
 
 >  # General MaaSSim description
 > Set of passengers demand to travel between their origins and destinations at desired departure/arrival times. 
