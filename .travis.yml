@@ -2,6 +2,8 @@ language: python
 python:
  - "3.7"
 install:
+ - conda config --prepend channels conda-forge
+ - conda create -n ox --strict-channel-priority osmnx
  - pip install -r requirements.txt
 script:
  - python -m unittest tests.test_consistency
