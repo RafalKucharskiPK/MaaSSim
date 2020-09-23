@@ -16,7 +16,7 @@ install:
  - conda info -a
  - conda config --prepend channels conda-forge
  - conda create -n ox --strict-channel-priority osmnx
- - pip install -r requirements.txt
  - conda activate ox
+ - conda install --file requirements.txt
 script:
  - python -m unittest tests.test_consistency
