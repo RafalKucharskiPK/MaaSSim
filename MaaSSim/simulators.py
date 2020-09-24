@@ -84,7 +84,7 @@ def simulate(config="../data/config/default.json", inData=None, params=None, **k
         from .data_structures import structures
         inData = structures.copy()  # fresh data
     if params is None:
-            params = get_config(config)  # load from .json file
+            params = get_config(config, root = kwargs.get('root'))  # load from .json file
 
 
 
