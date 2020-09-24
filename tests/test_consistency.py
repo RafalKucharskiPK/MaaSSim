@@ -6,6 +6,7 @@ __license__ = "MIT"
 
 
 import unittest
+import sys, os
 
 
 
@@ -13,6 +14,7 @@ class TestSimulationResults(unittest.TestCase):
 
 
     def test_consistency(self):
+        sys.path.insert(0, os.path.abspath('.'))
         from MaaSSim.simulators import simulate
         self.res = simulate(config="config_consistency_test.json")  # run simulations
 

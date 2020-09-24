@@ -84,7 +84,9 @@ def simulate(config="../data/config/default.json", inData=None, params=None, **k
         from .data_structures import structures
         inData = structures.copy()  # fresh data
     if params is None:
-        params = get_config(config)  # load from .json file
+            params = get_config(config)  # load from .json file
+
+
 
 
     if len(inData.G) == 0:  # only if no graph in input
