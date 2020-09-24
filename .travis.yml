@@ -21,6 +21,7 @@ install:
  - pip install pytest-cov
  - pip install coveralls
 script:
+- coverage report
  - python -m unittest tests.test_consistency
 after_success:
      - coveralls
