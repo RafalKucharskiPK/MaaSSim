@@ -29,32 +29,40 @@ class Simulator:
 
     used to prepare, populate, run simulations and analyze the results
     """
+    # STATICS and kwargs
+    # list of functionalities
+    # that may be filled with functions to represent desired behaviour
+    FNAMES = ['f_match',
+              'f_trav_out',
+              'f_driver_learn',
+              'f_driver_out',
+              'f_trav_mode',
+              'f_driver_decline',
+              'f_platform_choice',
+              'f_driver_repos',
+              'f_timeout',
+              'f_stop_crit',
+              'kpi_pax',
+              'kpi_veh']
+
+    DEFAULTS = {'print': False,
+                'params': None,
+                'f_match': f_match,
+                'f_trav_out': dummy_False,
+                'f_driver_learn': dummy_False,
+                'f_driver_out': dummy_False,
+                'f_trav_mode': dummy_False,
+                'f_driver_decline': dummy_False,
+                'f_driver_repos': f_repos,
+                'f_stop_crit': dummy_False,
+                'f_timeout': None,
+                'kpi_pax': kpi_pax,
+                'kpi_veh': kpi_veh,
+                'monitor': True}
 
     def __init__(self, _inData, **kwargs):
-        # STATICS and kwargs
-        # list of functionalities
-        # that may be filled with functions to represent desired behaviour
-        self.FNAMES = ['print', 'params', 'f_match', 'f_trav_out',
-                       'f_driver_learn', 'f_driver_out', 'f_trav_mode', 'f_driver_decline', 'f_platform_choice',
-                       'f_driver_repos', 'f_timeout', 'kpi_pax', 'kpi_veh']
-
-        self.default_args = {'print': False,
-                          'params': None,
-                          'f_match': f_match,
-                          'f_trav_out': dummy_False,
-                          'f_driver_learn': dummy_False,
-                          'f_driver_out': dummy_False,
-                          'f_trav_mode': dummy_False,
-                          'f_driver_decline': dummy_False,
-                          'f_driver_repos': f_repos,
-                          'f_timeout': self.timeout,
-                             'kpi_pax': kpi_pax,
-                             'kpi_veh': kpi_veh,
-                             'monitor': True}
-
         # input
-        self.inData = _inData.copy()  # copy of data structure for simulations (copy needed for multithreading)
-        self.functions = DotMap()
+        self.inData = _inData.copy()  # copy of data structure for simulations (copy needed for multi-threading)
         self.vehicles = self.inData.vehicles  # input
         self.platforms = self.inData.platforms  # input
 
@@ -68,7 +76,6 @@ class Simulator:
                             .format(self.params.simTime,
                                     self.t0, self.params.nV, self.params.nP,
                                     self.params.city))
-        # self.logger.info(kwargs)
 
     ##########
     #  PREP  #
@@ -76,13 +83,16 @@ class Simulator:
 
     def myinit(self, **kwargs):
         # part of init that is repeated every run
-        self.default_args.update(kwargs)
-        self.params = self.default_args['params']  # json dict with parameters
+        self.DEFAULTS.update(kwargs)
+        self.params = self.DEFAULTS['params']  # json dict with parameters
 
         # populate functions
-        for f in self.default_args.keys():
+        self.functions = DotMap()
+        for f in self.DEFAULTS.keys():
             if f in self.FNAMES:
-                self.functions[f] = self.default_args[f]
+                self.functions[f] = self.DEFAULTS[f]
+        if self.functions.timeout is None:
+            self.functions.timeout = self.timeout
 
         self.make_skims()
         self.set_variabilities()
@@ -185,7 +195,7 @@ class Simulator:
         return self.t0 + pd.Timedelta(self.env.now, 's')
 
     def assert_me(self):
-        #try:
+        # try:
         # basic checks for results consistency and correctness
         rides = self.runs[0].rides  # vehicles record
         trips = self.runs[0].trips  # travellers record
@@ -255,7 +265,6 @@ class Simulator:
     def timeout(self, n, variability=False):
         # overwrites sim timeout to add potential stochasticity
         if variability:
-            # n = (random.random()-0.5)*perturb*n+n #uniform
             n = np.random.normal(n, math.sqrt(n * variability))  # normal
         return self.env.timeout(n)
 

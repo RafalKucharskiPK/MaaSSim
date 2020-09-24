@@ -17,13 +17,13 @@ class PlatformAgent(object):
         self.id = platform_id  # reference in the list of simulated processes
         self.platform = self.sim.inData.platforms.loc[self.id].copy()  # reference to platform
         self.f_match = self.sim.functions.f_match  # handles process of exiting due to previous experience
-        self.event_based = self.sim.default_args.get('event_based', True)  # way of handling the reuqests
+        self.event_based = self.sim.DEFAULTS.get('event_based', True)  # way of handling the reuqests
         self.batch_time = self.platform.batch_time  # time interval [s] to match the requests
         self.resource = simpy.Resource(self.sim.env, capacity=100)
         self.vehQ = list()  # list of ids of queuing vehicles
         self.reqQ = list()  # list of ids of queuing travellers
         self.offers = dict()  # list of offers made to travellers
-        self.monitor = self.sim.default_args.get('monitor', False)  # do we record queue lengths
+        self.monitor = self.sim.DEFAULTS.get('monitor', False)  # do we record queue lengths
         self.Qs = list()
         self.tabu = [(-1, -1)]  # list of rejected matches [veh_id, req_id]
         self.action = self.sim.env.process(self.plat_action())  # <--- main process

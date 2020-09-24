@@ -4,24 +4,24 @@ __author__ = "Rafal Kucharski"
 __email__ = "r.m.kucharski@tudelft.nl"
 __license__ = "MIT"
 
-
-
 import unittest
-import os, sys
+import os
+import sys
 
-sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
+
+
+sys.path.append(os.path.join(os.path.dirname(__file__), '..'))  # add local path for Travis CI
 from MaaSSim.simulators import simulate
-CONFIG_PATH = os.path.join(os.path.dirname(__file__), 'config_consistency_test.json')
 
 
 class TestSimulationResults(unittest.TestCase):
 
-    def test_output(self):
+    def test_results(self):
+        CONFIG_PATH = os.path.join(os.path.dirname(__file__), 'config_results_test.json')
+        # tests if results are as expected
         self.sim = simulate(config=CONFIG_PATH, root_path=os.path.dirname(__file__))  # run simulations
 
         self.assertIn('trips', self.sim.runs[0].keys())  # do we have the results
-
-        print(self.sim.sim_end - self.sim.sim_start)
 
         self.assertLess(self.sim.sim_end - self.sim.sim_start, 20)  # does the calculation take a lot of time?
 
@@ -37,10 +37,8 @@ class TestSimulationResults(unittest.TestCase):
 
         self.assertIn('pax_exp', self.sim.res[0].keys())
 
-
-
     def test_consistency(self):
-
+        CONFIG_PATH = os.path.join(os.path.dirname(__file__), 'config_consistency_test.json')
         self.sim = simulate(config=CONFIG_PATH, root_path=os.path.dirname(__file__))  # run simulations
 
         from MaaSSim.traveller import travellerEvent
@@ -75,3 +73,8 @@ class TestSimulationResults(unittest.TestCase):
                 elif travellerEvent.REJECTS_OFFER.name in trip.event.values:
                     flag = True
                 self.assertTrue(flag)
+
+    # def test_static_input(self):
+    #     CONFIG_PATH = os.path.join(os.path.dirname(__file__), 'config_static_input.json')
+    #     # tests if results are as expected
+    #     self.sim = simulate(config=CONFIG_PATH, root_path=os.path.dirname(__file__))  # run simulations

@@ -203,6 +203,17 @@ def generate_demand(_inData, _params=None, avg_speed=False):
     return _inData
 
 
+def read_requests_csv(path):
+    from MaaSSim.data_structures import structures
+    requests = pd.read_csv(path, index_col = 1)
+    requests.treq = pd.to_datetime(requests.treq)
+    requests.ttrav = pd.to_timedelta(requests.ttrav)
+    passengers = pd.DataFrame(index=requests.index, columns=structures.passengers.columns)
+    passengers.pos = requests.origin.copy()
+    passengers.platforms = passengers.platforms.apply(lambda x: [0])
+    return requests, passengers
+
+
 def make_config_paths(params, main=None):
     # call it whenever you change a city name, or main path
     if main is None:

@@ -32,6 +32,7 @@ class PassengerAgent(object):
         self.platform_ids = self.pax.platforms
 
         self.requests = self.sim.inData.requests[self.sim.inData.requests.pax_id == pax_id]  # assign a requests
+
         self.request = self.requests.iloc[0]  # for the moment we consider only one request
         self.schedule = self.request.sim_schedule  # schedule serving this requests
         self.schedule_id = self.request.ride_id  # schedule serving this requests

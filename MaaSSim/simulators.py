@@ -5,11 +5,11 @@
 ################################################################################
 
 
-from .maassim import Simulator
-from .shared import prep_shared_rides
-from .utils import get_config, load_G, generate_demand, generate_vehicles, initialize_df, empty_series, \
-    slice_space, test_space, dummy_False
-import sys
+from MaaSSim.maassim import Simulator
+from MaaSSim.shared import prep_shared_rides
+from MaaSSim.utils import get_config, load_G, generate_demand, generate_vehicles, initialize_df, empty_series, \
+    slice_space, test_space, dummy_False, read_requests_csv
+import numpy as np
 import pandas as pd
 from scipy.optimize import brute
 import logging
@@ -81,10 +81,18 @@ def simulate(config="../data/config/default.json", inData=None, params=None, **k
     """
 
     if inData is None:  # othwesie we use what is passed
-        from .data_structures import structures
+        from MaaSSim.data_structures import structures
         inData = structures.copy()  # fresh data
     if params is None:
             params = get_config(config, root_path = kwargs.get('root_path'))  # load from .json file
+
+    if params.paths.get('requests', False):
+        inData.requests, inData.passengers = read_requests_csv(params.paths.requests)
+
+    if params.paths.get('vehicles',False):
+        inData.vehicles = pd.read_csv(params.paths.vehicles, index_col=1)
+
+
 
 
 
@@ -99,16 +107,15 @@ def simulate(config="../data/config/default.json", inData=None, params=None, **k
         inData.platforms = initialize_df(inData.platforms)
         inData.platforms.loc[0] = empty_series(inData.platforms)
 
-    inData = prep_shared_rides(inData, params.shareability, sblt=None)  # obligatory to prepare schedules
-    # even for single rides
+    inData = prep_shared_rides(inData, params.shareability, sblt=None)  # prepare schedules
+
 
     sim = Simulator(inData, params=params, **kwargs)  # initialize
-    
-    stop_crit = kwargs.get('stop_crit_fun', dummy_False)
+
     for day in range(params.get('nD', 1)):  # run iterations
         sim.make_and_run(run_id=day)  # prepare and SIM
         sim.output()  # calc results
-        if stop_crit(sim=sim):
+        if sim.functions.f_stop_crit(sim=sim):
             break
     return sim
 
