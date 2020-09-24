@@ -14,7 +14,7 @@ class TestSimulationResults(unittest.TestCase):
 
     def test_consistency(self):
         from MaaSSim.simulators import simulate
-        self.res = simulate(config="../data/config/default.json")  # run simulations
+        self.res = simulate(config="config_consistency_test.json")  # run simulations
 
         from MaaSSim.traveller import travellerEvent
 

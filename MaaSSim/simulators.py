@@ -84,12 +84,8 @@ def simulate(config="../data/config/default.json", inData=None, params=None, **k
         from .data_structures import structures
         inData = structures.copy()  # fresh data
     if params is None:
-        try:
-            params = get_config(config)  # load from .json file
-        except:
-            import os
-            print(os.getcwd())
-            feeffe
+        params = get_config(config)  # load from .json file
+
 
     if len(inData.G) == 0:  # only if no graph in input
         inData = load_G(inData, params, stats=True)  # download graph for the 'params.city' and calc the skim matrices
