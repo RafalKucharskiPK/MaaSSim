@@ -18,5 +18,9 @@ install:
  - conda create -n ox --strict-channel-priority osmnx
  - conda activate ox
  - pip install -r requirements.txt
+ - pip install pytest-cov
+ - pip install coveralls
 script:
  - python -m unittest tests.test_consistency
+after_success:
+     - coveralls

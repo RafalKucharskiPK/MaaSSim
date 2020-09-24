@@ -62,15 +62,15 @@ def initialize_df(df):
     return df
 
 
-def get_config(path, root = None):
+def get_config(path, root_path = None):
     # reads a .json file with MaaSSim configuration
     # use as: params = get_config(config.json)
     with open(path) as json_file:
         data = json.load(json_file)
         params = DotMap(data)
-    if root is not None:
-        params.paths.G = os.path.join(root,  params.paths.G)  # graphml of a current .city
-        params.paths.skim = os.path.join(root, params.paths.skim)  # csv with a skim between the nodes of the .city
+    if root_path is not None:
+        params.paths.G = os.path.join(root_path,  params.paths.G)  # graphml of a current .city
+        params.paths.skim = os.path.join(root_path, params.paths.skim)  # csv with a skim between the nodes of the .city
 
     return params
 

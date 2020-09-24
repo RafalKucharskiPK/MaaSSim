@@ -6,19 +6,17 @@ __license__ = "MIT"
 
 
 import unittest
-import sys, os, json
+import os
 
 CONFIG_PATH = os.path.join(os.path.dirname(__file__), 'config_consistency_test.json')
 
 
 class TestSimulationResults(unittest.TestCase):
 
-
     def test_consistency(self):
 
-
         from MaaSSim.simulators import simulate
-        self.res = simulate(config=CONFIG_PATH, root = os.path.dirname(__file__))  # run simulations
+        self.res = simulate(config=CONFIG_PATH, root_path=os.path.dirname(__file__))  # run simulations
 
         from MaaSSim.traveller import travellerEvent
 
@@ -28,17 +26,17 @@ class TestSimulationResults(unittest.TestCase):
             r = self.res.inData.requests[self.res.inData.requests.pax_id == i].iloc[0].squeeze()  # that is his request
             o, d = r['origin'], r['destination']  # his origin and destination
             trip = trips[trips.pax == i]  # his trip
-            self.assertIn(o, trip.pos.values) # was he at origin
+            self.assertIn(o, trip.pos.values)  # was he at origin
             if travellerEvent.ARRIVES_AT_DEST.name in trip.event.values:
-                # succesful trip
-                self.assertIn(d , trip.pos.values) # did he reach the destination
+                # successful trip
+                self.assertIn(d, trip.pos.values)  # did he reach the destination
                 veh = trip.veh_id.dropna().unique()  # did he travel with vehicle
                 self.assertAlmostEqual(len(veh), 1)  # was there just one vehicle (should be)
                 ride = rides[rides.veh == veh[0]]
-                self.assertIn(i,list(
+                self.assertIn(i, list(
                     set([item for sublist in ride.paxes.values for item in sublist])))  # was he assigned to a vehicle
                 common_pos = list(set(list(ride.pos.values) + list(trip.pos.values)))
-                self.assertGreaterEqual(len(common_pos),2) # were there at least two points in common
+                self.assertGreaterEqual(len(common_pos), 2)  # were there at least two points in common
                 for pos in common_pos:
                     self.assertGreater(len(set(ride[ride.pos == pos].t.to_list() + trip[
                         trip.pos == pos].t.to_list())), 0)  # were they at the same time at the same place?
@@ -52,9 +50,6 @@ class TestSimulationResults(unittest.TestCase):
                 elif travellerEvent.REJECTS_OFFER.name in trip.event.values:
                     flag = True
                 self.assertTrue(flag)
-
-
-
 
 
 if __name__ == '__main__':
