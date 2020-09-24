@@ -41,7 +41,6 @@ class TestSimulationResults(unittest.TestCase):
 
     def test_consistency(self):
 
-
         self.sim = simulate(config=CONFIG_PATH, root_path=os.path.dirname(__file__))  # run simulations
 
         from MaaSSim.traveller import travellerEvent
