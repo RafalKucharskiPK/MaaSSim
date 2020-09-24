@@ -8,18 +8,18 @@ __license__ = "MIT"
 import unittest
 import sys, os, json
 
+CONFIG_PATH = os.path.join(os.path.dirname(__file__), 'config_consistency_test.json')
 
 
 class TestSimulationResults(unittest.TestCase):
 
 
     def test_consistency(self):
-        path = os.path.join(os.path.dirname(__file__), 'config_consistency_test.json')
 
 
-
+        sys.path.insert(0, os.path.dirname(__file__))
         from MaaSSim.simulators import simulate
-        self.res = simulate(config=path)  # run simulations
+        self.res = simulate(config=CONFIG_PATH)  # run simulations
 
         from MaaSSim.traveller import travellerEvent
 
