@@ -41,7 +41,7 @@ class TestSimulationResults(unittest.TestCase):
                     self.assertGreater(len(set(ride[ride.pos == pos].t.to_list() + trip[
                         trip.pos == pos].t.to_list())), 0)  # were they at the same time at the same place?
             else:
-                # unsuccesful trip
+                # unsuccessful trip
                 flag = False
                 if travellerEvent.LOSES_PATIENCE.name in trip.event.values:
                     flag = True
@@ -50,6 +50,3 @@ class TestSimulationResults(unittest.TestCase):
                 elif travellerEvent.REJECTS_OFFER.name in trip.event.values:
                     flag = True
                 self.assertTrue(flag)
-
-
-
