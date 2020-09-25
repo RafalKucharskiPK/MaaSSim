@@ -20,8 +20,8 @@ install:
  - pip install -r requirements.txt
  - pip install coveralls
 script:
- - python -m unittest tests/test_consistency.py
- - coverage run tests/test_consistency.py
+ - python -m unittest tests/test_maassim.py
+ - coverage run tests/test_maassim.py
 
 after_success:
  - coveralls
