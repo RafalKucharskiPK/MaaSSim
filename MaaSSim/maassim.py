@@ -281,29 +281,6 @@ class Simulator:
         self.vars.pickup_patience = False
 
     def plot_trip(self, pax_id, run_id=None):
-        import matplotlib.pyplot as plt
-        import networkx as nx
-        import osmnx as ox
-        from .traveller import travellerEvent
-        G = self.inData.G
-        # space time
-        if run_id is None:
-            run_id = list(self.runs.keys())[-1]
-        df = self.runs[run_id].trips
-        df = df[df.pax == pax_id]
-        df['status_num'] = df.apply(lambda x: travellerEvent[x.event].value, axis=1)
+        from MaaSSim.visualizations import plot_trip
+        plot_trip(self,pax_id, run_id = run_id)
 
-        fig, ax = plt.subplots()
-        df.plot(x='t', y='status_num', ax=ax, drawstyle="steps-post")
-        ax.yticks = plt.yticks(df.index, df.event)
-        plt.show()
-
-        # map
-        routes = list()
-        prev_node = df.pos.iloc[0]
-        for node in df.pos[1:]:
-            if prev_node != node:
-                routes.append(nx.shortest_path(G, prev_node, node, weight='length'))
-                routes.append(nx.shortest_path(G, prev_node, node, weight='length'))
-            prev_node = node
-        ox.plot_graph_routes(G, routes, node_size=0)

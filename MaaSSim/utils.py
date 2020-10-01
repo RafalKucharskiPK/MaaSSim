@@ -62,16 +62,23 @@ def initialize_df(df):
     return df
 
 
-def get_config(path, root_path = None):
-    # reads a .json file with MaaSSim configuration
-    # use as: params = get_config(config.json)
+def get_config(path, root_path=None, set_t0=False):
+    """
+    reads a .json file with MaaSSim configuration
+    use as: params = get_config(config.json)
+    :param path:
+    :param root_path: adjust the paths with the main path while reading (used mainly for Travis tests on linux server)
+    :param set_t0: adjust the t0 string to pandas datetime
+    :return: params DotMap
+    """
     with open(path) as json_file:
         data = json.load(json_file)
         params = DotMap(data)
     if root_path is not None:
-        params.paths.G = os.path.join(root_path,  params.paths.G)  # graphml of a current .city
+        params.paths.G = os.path.join(root_path, params.paths.G)  # graphml of a current .city
         params.paths.skim = os.path.join(root_path, params.paths.skim)  # csv with a skim between the nodes of the .city
-
+    if set_t0:
+        params.t0 = pd.to_datetime(params.t0)
     return params
 
 
@@ -205,7 +212,7 @@ def generate_demand(_inData, _params=None, avg_speed=False):
 
 def read_requests_csv(path):
     from MaaSSim.data_structures import structures
-    requests = pd.read_csv(path, index_col = 1)
+    requests = pd.read_csv(path, index_col=1)
     requests.treq = pd.to_datetime(requests.treq)
     requests.ttrav = pd.to_timedelta(requests.ttrav)
     passengers = pd.DataFrame(index=requests.index, columns=structures.passengers.columns)

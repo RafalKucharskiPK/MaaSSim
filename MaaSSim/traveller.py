@@ -37,7 +37,7 @@ class PassengerAgent(object):
         self.schedule = self.request.sim_schedule  # schedule serving this requests
         self.schedule_id = self.request.ride_id  # schedule serving this requests
         self.schedule_leader = self.request.position == 0  # orded in pickups - if it is 0 , you will request the ride,
-        if True:
+        if self.sim.params.get('debug', False): #  debugging test test
             nodes = list(self.schedule.node.values)
             if self.request.origin != self.request.destination:
                 assert nodes.index(self.request.origin) < nodes.index(self.request.destination)
@@ -66,7 +66,7 @@ class PassengerAgent(object):
         self.msg = ''
         self.t_matching = None
 
-        self.sharing_not_requesting = False
+        self.sharing_not_requesting = False # depreciated
 
     def update(self, event, pos=None, t=True, db_update=True):
         """call whenever pos or event of vehicle changes
