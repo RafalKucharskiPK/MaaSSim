@@ -17,12 +17,15 @@ install:
  - conda config --prepend channels conda-forge
  - conda create -n ox --strict-channel-priority osmnx
  - conda activate ox
+ - conda install jupyter
  - pip install -r requirements.txt
  - pip install nbconvert
  - pip install coveralls
+ - pip install nbval
 script:
  - python -m unittest tests/test_maassim.py
  - coverage run -m unittest tests/test_maassim.py
+ - py.test --nbval docs/tutorials
 
 after_success:
  - coveralls

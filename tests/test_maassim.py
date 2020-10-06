@@ -8,8 +8,6 @@ import unittest
 import os
 import sys
 import glob
-import subprocess
-import tempfile
 
 
 
@@ -137,38 +135,35 @@ class TestUtils(unittest.TestCase):
         os.remove(self.params.paths.G)
         os.remove(self.params.paths.skim)
 
-class TestJupyters(unittest.TestCase):
-    def setUp(self):
-        from nbconvert.preprocessors import ExecutePreprocessor
-        self.ep = ExecutePreprocessor(timeout=600)
-
-
-    def test_tutorials(self):
-        import nbformat
-        NOTEBOOKS_PATH = os.path.join(os.path.dirname(__file__), "../docs/tutorials")
-
-        os.chdir(NOTEBOOKS_PATH)
-
-        notebooks = glob.glob('*.{}'.format('ipynb'))
-
-        #tutorials
-        for notebook in notebooks:
-            if notebook[0] == '0':
-                print('testing: ',notebook)
-                with tempfile.NamedTemporaryFile(suffix=".ipynb") as fout:
-                    args = ["jupyter", "nbconvert", "--to", "notebook", "--execute",
-                            "--ExecutePreprocessor.timeout=1000",
-                            "--output", fout.name, notebook]
-                    subprocess.check_call(args)
-        # appendices
-        for notebook in notebooks:
-            if notebook[0] == 'A':
-                print('testing: ', notebook)
-                with tempfile.NamedTemporaryFile(suffix=".ipynb") as fout:
-                    args = ["jupyter", "nbconvert", "--to", "notebook", "--execute",
-                            "--ExecutePreprocessor.timeout=1000",
-                            "--output", fout.name, notebook]
-                    subprocess.check_call(args)
+# class TestJupyters(unittest.TestCase):
+#     def setUp(self):
+#         from nbconvert.preprocessors import ExecutePreprocessor
+#         self.ep = ExecutePreprocessor(timeout=600)
+#
+#
+#     def test_tutorials(self):
+#         import nbformat
+#         NOTEBOOKS_PATH = os.path.join(os.path.dirname(__file__), "../docs/tutorials")
+#
+#         os.chdir(NOTEBOOKS_PATH)
+#
+#         notebooks = glob.glob('*.{}'.format('ipynb'))
+#
+#         #tutorials
+#         for notebook in notebooks:
+#             if notebook[0] == '0':
+#                 print('testing: ',notebook)
+#                 with open(notebook) as f:
+#                     nb = nbformat.read(f, as_version=4)
+#                 self.ep.preprocess(nb)
+#
+#         # appendices
+#         for notebook in notebooks:
+#             if notebook[0] == 'A':
+#                 print('testing: ', notebook)
+#                 with open(notebook) as f:
+#                     nb = nbformat.read(f, as_version=4)
+#                 self.ep.preprocess(nb)
 
 
 
