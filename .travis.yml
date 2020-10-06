@@ -18,6 +18,7 @@ install:
  - conda create -n ox --strict-channel-priority osmnx
  - conda activate ox
  - pip install -r requirements.txt
+ - pip install nbconvert
  - pip install coveralls
 script:
  - python -m unittest tests/test_maassim.py

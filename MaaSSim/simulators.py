@@ -116,7 +116,8 @@ def simulate(config="../data/config/default.json", inData=None, params=None, **k
 
 
 if __name__ == "__main__":
-    simulate()
+    simulate()  # single run
+
     from dotmap import DotMap
     search_space = DotMap()
     search_space.nP = [20, 40]
