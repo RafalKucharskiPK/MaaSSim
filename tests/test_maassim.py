@@ -13,6 +13,7 @@ import glob
 
 sys.path.append(os.path.join(os.path.dirname(__file__), '..'))  # add local path for Travis CI
 from MaaSSim.simulators import simulate, simulate_parallel
+from MaaSSim.utils import prep_supply_and_demand, get_config, load_G
 
 
 class TestSimulationResults(unittest.TestCase):
@@ -74,6 +75,18 @@ class TestSimulationResults(unittest.TestCase):
                 elif travellerEvent.REJECTS_OFFER.name in trip.event.values:
                     flag = True
                 self.assertTrue(flag)
+
+    def test_prep(self):
+        from MaaSSim.data_structures import structures as inData
+        CONFIG_PATH = os.path.join(os.path.dirname(__file__), 'config_results_test.json')
+        params = get_config(CONFIG_PATH, root_path=os.path.dirname(__file__))  # load from .json file
+        inData = load_G(inData, params)  # load network graph
+        inData = prep_supply_and_demand(inData, params)  # generate supply and demand
+        self.assertEqual(inData.requests.shape[0], params.nP)
+        self.assertEqual(inData.passengers.shape[0], params.nP)
+        self.assertEqual(inData.vehicles.shape[0], params.nV)
+
+
 
 
 
