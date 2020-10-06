@@ -290,9 +290,10 @@ def prep_supply_and_demand(_inData, params):
 
 def test_space():
     # to see if code works
-    full_space = DotMap()
-    full_space.nP = [100, 200]  # number of requests per sim time
-    return full_space
+    test_space = DotMap()
+    test_space.nP = [30, 40]  # number of requests per sim time
+    test_space.nV = [10, 20]  # number of requests per sim time
+    return test_space
 
 
 def slice_space(s, replications=1, _print=False):

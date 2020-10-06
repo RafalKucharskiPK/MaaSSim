@@ -38,7 +38,7 @@ def single_pararun(one_slice, *args):
     return 0
 
 
-def simulate_parallel(config="../data/config/default.json", inData=None, params=None, search_space=None, **kwargs):
+def simulate_parallel(config="../data/config/parallel.json", inData=None, params=None, search_space=None, **kwargs):
     if inData is None:  # othwerwise we use what is passed
         from MaaSSim.data_structures import structures
         inData = structures.copy()  # fresh data
@@ -69,7 +69,7 @@ def simulate_parallel(config="../data/config/default.json", inData=None, params=
           workers=params.parallel.get('nThread',1))
 
 
-def simulate(config="../data/config/parallel.json", inData=None, params=None, **kwargs):
+def simulate(config="../data/config/default.json", inData=None, params=None, **kwargs):
     """
     main runner and wrapper
     loads or uses json config to prepare the data for simulation, run it and process the results
@@ -85,6 +85,9 @@ def simulate(config="../data/config/parallel.json", inData=None, params=None, **
         inData = structures.copy()  # fresh data
     if params is None:
             params = get_config(config, root_path = kwargs.get('root_path'))  # load from .json file
+    if kwargs.get('make_main_path',False):
+        from MaaSSim.utils import make_config_paths
+        params = make_config_paths(params, main = kwargs.get('make_main_path',False), rel = True)
 
     if params.paths.get('requests', False):
         inData.requests, inData.passengers = read_requests_csv(params.paths.requests)
@@ -116,11 +119,9 @@ def simulate(config="../data/config/parallel.json", inData=None, params=None, **
 
 
 if __name__ == "__main__":
-    simulate()  # single run
+    simulate(make_main_path='..')  # single run
 
-    from dotmap import DotMap
-    search_space = DotMap()
-    search_space.nP = [20, 40]
-    search_space.nV = [20, 40]
-    simulate_parallel(search_space = search_space)
+    from MaaSSim.utils import test_space
+
+    simulate_parallel(search_space = test_space())
 

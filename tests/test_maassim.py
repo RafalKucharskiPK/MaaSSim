@@ -75,6 +75,8 @@ class TestSimulationResults(unittest.TestCase):
                     flag = True
                 self.assertTrue(flag)
 
+
+
     def test_parallel(self):
         from dotmap import DotMap
         search_space = DotMap()
@@ -104,12 +106,29 @@ class TestUtils(unittest.TestCase):
 
     def setUp(self):
         from MaaSSim.data_structures import structures
-        from MaaSSim.utils import get_config
+        from MaaSSim.utils import get_config, make_config_paths
 
 
         self.inData = structures.copy()  # fresh data
         CONFIG_PATH = os.path.join(os.path.dirname(__file__), 'config_utils_test.json')
         self.params = get_config(CONFIG_PATH, root_path=os.path.dirname(__file__))  # load from .json file
+
+    def test_configIO(self):
+        from MaaSSim.utils import  make_config_paths
+        CONFIG_PATH = os.path.join(os.path.dirname(__file__), 'config_utils_test.json')
+
+        from MaaSSim.utils import get_config, save_config
+        self.params = get_config(CONFIG_PATH, root_path=os.path.dirname(__file__))  # load from .json file
+        params = make_config_paths(self.params, main = 'test_path', rel = True)
+        self.assertEqual(params.paths.G[0:9], 'test_path')
+        self.params.testIO = '12'
+        save_config(self.params, os.path.join(os.path.dirname(__file__), 'configIO_test.json'))
+        params = get_config(os.path.join(os.path.dirname(__file__), 'configIO_test.json'),
+                            root_path=os.path.dirname(__file__))  # load from .json file
+        self.assertEqual(params.testIO, self.params.testIO)
+
+
+
 
 
     def test_networkIO(self):
@@ -132,38 +151,9 @@ class TestUtils(unittest.TestCase):
         self.assertGreater(self.inData.skim.mean().mean(),0)  # positive distances
 
     def tearDown(self):
-        os.remove(self.params.paths.G)
-        os.remove(self.params.paths.skim)
-
-# class TestJupyters(unittest.TestCase):
-#     def setUp(self):
-#         from nbconvert.preprocessors import ExecutePreprocessor
-#         self.ep = ExecutePreprocessor(timeout=600)
-#
-#
-#     def test_tutorials(self):
-#         import nbformat
-#         NOTEBOOKS_PATH = os.path.join(os.path.dirname(__file__), "../docs/tutorials")
-#
-#         os.chdir(NOTEBOOKS_PATH)
-#
-#         notebooks = glob.glob('*.{}'.format('ipynb'))
-#
-#         #tutorials
-#         for notebook in notebooks:
-#             if notebook[0] == '0':
-#                 print('testing: ',notebook)
-#                 with open(notebook) as f:
-#                     nb = nbformat.read(f, as_version=4)
-#                 self.ep.preprocess(nb)
-#
-#         # appendices
-#         for notebook in notebooks:
-#             if notebook[0] == 'A':
-#                 print('testing: ', notebook)
-#                 with open(notebook) as f:
-#                     nb = nbformat.read(f, as_version=4)
-#                 self.ep.preprocess(nb)
+        pass
+        #os.remove(self.params.paths.G)
+        #os.remove(self.params.paths.skim)
 
 
 
