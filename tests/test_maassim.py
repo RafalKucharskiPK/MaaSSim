@@ -74,7 +74,49 @@ class TestSimulationResults(unittest.TestCase):
                     flag = True
                 self.assertTrue(flag)
 
+
+
+
     # def test_static_input(self):
     #     CONFIG_PATH = os.path.join(os.path.dirname(__file__), 'config_static_input.json')
     #     # tests if results are as expected
     #     self.sim = simulate(config=CONFIG_PATH, root_path=os.path.dirname(__file__))  # run simulations
+
+
+class TestUtils(unittest.TestCase):
+
+
+    def setUp(self):
+        from MaaSSim.data_structures import structures
+        from MaaSSim.utils import get_config
+
+
+        self.inData = structures.copy()  # fresh data
+        CONFIG_PATH = os.path.join(os.path.dirname(__file__), 'config_utils_test.json')
+        self.params = get_config(CONFIG_PATH, root_path=os.path.dirname(__file__))  # load from .json file
+
+
+    def test_networkIO(self):
+        from numpy import inf
+        from MaaSSim.utils import load_G, download_G, save_G
+
+        self.params.city = 'Wieliczka, Poland'
+
+        self.params.paths.G = os.path.join(os.path.dirname(__file__), self.params.city.split(",")[0] + ".graphml")  # graphml of a current .city
+        self.params.paths.skim = os.path.join(os.path.dirname(__file__), self.params.city.split(",")[0] + ".csv")  # csv with a skim between the nodes of the .city
+
+
+        self.inData = download_G(self.inData, self.params) # download the graph and compute the skim
+        save_G(self.inData, self.params) # save it to params.paths.G
+        self.inData = load_G(self.inData, self.params, stats=True)  # download graph for the 'params.city' and calc the skim matrices
+
+        self.assertGreater(self.inData.nodes.shape[0],10)  # do we have nodes
+        self.assertGreater(self.inData.skim.shape[0], 10)  # do we have skim
+        self.assertLess(self.inData.skim.mean().mean(), inf)  # and values inside
+        self.assertGreater(self.inData.skim.mean().mean(),0)  # positive distances
+
+    def tearDown(self):
+        os.remove(self.params.paths.G)
+        os.remove(self.params.paths.skim)
+
+
