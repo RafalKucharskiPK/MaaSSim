@@ -38,12 +38,12 @@ def single_pararun(one_slice, *args):
     return 0
 
 
-def simulate_parallel(config="../tests/1.json", inData=None, params=None, search_space=None, **kwargs):
+def simulate_parallel(config="../data/config/default.json", inData=None, params=None, search_space=None, **kwargs):
     if inData is None:  # othwerwise we use what is passed
         from MaaSSim.data_structures import structures
         inData = structures.copy()  # fresh data
     if params is None:
-        params = get_config(config)  # load from .json file
+        params = get_config(config, root_path = kwargs.get('root_path'))  # load from .json file
 
     if len(inData.G) == 0:  # only if no graph in input
         inData = load_G(inData, params, stats=True)  # download graph for the 'params.city' and calc the skim matrices
@@ -117,3 +117,9 @@ def simulate(config="../data/config/default.json", inData=None, params=None, **k
 
 if __name__ == "__main__":
     simulate()
+    from dotmap import DotMap
+    search_space = DotMap()
+    search_space.nP = [20, 40]
+    search_space.nV = [20, 40]
+    simulate_parallel(search_space = search_space)
+

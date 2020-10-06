@@ -7,11 +7,12 @@ __license__ = "MIT"
 import unittest
 import os
 import sys
+import glob
 
 
 
 sys.path.append(os.path.join(os.path.dirname(__file__), '..'))  # add local path for Travis CI
-from MaaSSim.simulators import simulate
+from MaaSSim.simulators import simulate, simulate_parallel
 
 
 class TestSimulationResults(unittest.TestCase):
@@ -74,6 +75,21 @@ class TestSimulationResults(unittest.TestCase):
                     flag = True
                 self.assertTrue(flag)
 
+    def test_parallel(self):
+        from dotmap import DotMap
+        search_space = DotMap()
+        search_space.nP = [20, 40]
+        search_space.nV = [20, 40]
+        CONFIG_PATH = os.path.join(os.path.dirname(__file__), 'config_results_test.json')
+
+        simulate_parallel(config = CONFIG_PATH, search_space=search_space, root_path=os.path.dirname(__file__))
+
+    def tearDown(self):
+        zips = glob.glob('*.{}'.format('zip'))
+
+        for zip in zips:
+            os.remove(zip)
+
 
 
 
@@ -124,13 +140,15 @@ class TestJupyters(unittest.TestCase):
         from nbconvert.preprocessors import ExecutePreprocessor
         self.ep = ExecutePreprocessor(timeout=600, kernel_name='python3')
 
+
     def test_tutorials(self):
-        import glob
         import nbformat
 
         os.chdir("../docs/tutorials")
 
         notebooks = glob.glob('*.{}'.format('ipynb'))
+
+        #tutorials
         for notebook in notebooks:
             if notebook[0] == '0':
                 print('testing: ',notebook)
@@ -138,13 +156,7 @@ class TestJupyters(unittest.TestCase):
                     nb = nbformat.read(f, as_version=4)
                 self.ep.preprocess(nb)
 
-    def test_As(self):
-        import glob
-        import nbformat
-
-        os.chdir("../docs/tutorials")
-
-        notebooks = glob.glob('*.{}'.format('ipynb'))
+        # appendices
         for notebook in notebooks:
             if notebook[0] == 'A':
                 print('testing: ', notebook)
