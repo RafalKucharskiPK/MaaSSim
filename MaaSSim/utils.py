@@ -125,6 +125,27 @@ def load_G(_inData, _params=None, stats=True, set_t=True):
     return _inData
 
 
+def download_G(inData, _params, make_skims=True):
+    # uses osmnx to download the graph
+    print('Downloading network for {} witn osmnx'.format(_params.city))
+    inData.G = ox.graph_from_place(_params.city, network_type='drive')
+    inData.nodes = pd.DataFrame.from_dict(dict(inData.G.nodes(data=True)), orient='index')
+    if make_skims:
+        inData.skim_generator = nx.all_pairs_dijkstra_path_length(inData.G,
+                                                                  weight='length')
+        inData.skim_dict = dict(inData.skim_generator)  # filled dict is more usable
+        inData.skim = pd.DataFrame(inData.skim_dict).fillna(_params.dist_threshold).T.astype(
+            int)  # and dataframe is more intuitive
+
+    return inData
+
+
+def save_G(inData, _params, path=None):
+    # saves graph and skims to files
+    ox.save_graphml(inData.G, filepath=_params.paths.G)
+    inData.skim.to_csv(_params.paths.skim, chunksize=20000000)
+
+
 def generate_vehicles(_inData, nV):
     """
     generates single vehicle (database row with structure defined in DataStructures)
@@ -221,11 +242,19 @@ def read_requests_csv(path):
     return requests, passengers
 
 
-def make_config_paths(params, main=None):
+def make_config_paths(params, main=None, rel = False):
     # call it whenever you change a city name, or main path
     if main is None:
-        main = os.path.join(os.getcwd(), "../..")
-    params.paths.main = os.path.abspath(main)  # main repo folder
+        if rel:
+            main = '../..'
+        else:
+            main = os.path.join(os.getcwd(), "../..")
+    if rel:
+        params.paths.main = main
+    else:
+        params.paths.main = os.path.abspath(main)  # main repo folder
+
+
     params.paths.data = os.path.join(params.paths.main, 'data')  # data folder (not synced with repo)
     params.paths.params = os.path.join(params.paths.data, 'configs')
     params.paths.postcodes = os.path.join(params.paths.data, 'postcodes',

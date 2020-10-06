@@ -38,9 +38,9 @@ def single_pararun(one_slice, *args):
     return 0
 
 
-def pararun(config="../tests/1.json", inData=None, params=None, search_space=None, **kwargs):
+def simulate_parallel(config="../tests/1.json", inData=None, params=None, search_space=None, **kwargs):
     if inData is None:  # othwerwise we use what is passed
-        from .utils import structures
+        from MaaSSim.data_structures import structures
         inData = structures.copy()  # fresh data
     if params is None:
         params = get_config(config)  # load from .json file
@@ -59,7 +59,7 @@ def pararun(config="../tests/1.json", inData=None, params=None, search_space=Non
 
 
     inData = prep_shared_rides(inData, params.shareability, sblt = None)  # obligatory to prepare schedules
-    # even for single rides
+
 
     brute(func=single_pararun,
           ranges=slice_space(search_space, replications=params.parallel.nReplications),
@@ -80,7 +80,7 @@ def simulate(config="../data/config/default.json", inData=None, params=None, **k
     :return: simulation object with results
     """
 
-    if inData is None:  # othwesie we use what is passed
+    if inData is None:  # otherwise we use what is passed
         from MaaSSim.data_structures import structures
         inData = structures.copy()  # fresh data
     if params is None:
@@ -91,11 +91,6 @@ def simulate(config="../data/config/default.json", inData=None, params=None, **k
 
     if params.paths.get('vehicles',False):
         inData.vehicles = pd.read_csv(params.paths.vehicles, index_col=1)
-
-
-
-
-
 
     if len(inData.G) == 0:  # only if no graph in input
         inData = load_G(inData, params, stats=True)  # download graph for the 'params.city' and calc the skim matrices

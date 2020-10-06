@@ -119,4 +119,40 @@ class TestUtils(unittest.TestCase):
         os.remove(self.params.paths.G)
         os.remove(self.params.paths.skim)
 
+class TestJupyters(unittest.TestCase):
+    def setUp(self):
+        from nbconvert.preprocessors import ExecutePreprocessor
+        self.ep = ExecutePreprocessor(timeout=600, kernel_name='python3')
+
+    def test_tutorials(self):
+        import glob
+        import nbformat
+
+        os.chdir("../docs/tutorials")
+
+        notebooks = glob.glob('*.{}'.format('ipynb'))
+        for notebook in notebooks:
+            if notebook[0] == '0':
+                print('testing: ',notebook)
+                with open(notebook) as f:
+                    nb = nbformat.read(f, as_version=4)
+                self.ep.preprocess(nb)
+
+    def test_As(self):
+        import glob
+        import nbformat
+
+        os.chdir("../docs/tutorials")
+
+        notebooks = glob.glob('*.{}'.format('ipynb'))
+        for notebook in notebooks:
+            if notebook[0] == 'A':
+                print('testing: ', notebook)
+                with open(notebook) as f:
+                    nb = nbformat.read(f, as_version=4)
+                self.ep.preprocess(nb)
+
+
+
+
 
