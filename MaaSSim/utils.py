@@ -231,15 +231,21 @@ def generate_demand(_inData, _params=None, avg_speed=False):
     return _inData
 
 
-def read_requests_csv(path):
+def read_requests_csv(inData, path):
     from MaaSSim.data_structures import structures
-    requests = pd.read_csv(path, index_col=1)
-    requests.treq = pd.to_datetime(requests.treq)
-    requests.ttrav = pd.to_timedelta(requests.ttrav)
-    passengers = pd.DataFrame(index=requests.index, columns=structures.passengers.columns)
-    passengers.pos = requests.origin.copy()
-    passengers.platforms = passengers.platforms.apply(lambda x: [0])
-    return requests, passengers
+    inData.requests = pd.read_csv(path, index_col=1)
+    inData.requests.treq = pd.to_datetime(inData.requests.treq)
+    inData.requests['pax_id'] = inData.requests.index.copy()
+    inData.requests.ttrav = pd.to_timedelta(inData.requests.ttrav)
+    inData.passengers = pd.DataFrame(index=inData.requests.index, columns=structures.passengers.columns)
+    inData.passengers['pax_id'] = inData.passengers.index.copy()
+    inData.passengers.pos = inData.requests.origin.copy()
+    inData.passengers.platforms = inData.passengers.platforms.apply(lambda x: [0])
+    return inData
+
+def read_vehicle_positions(inData, path):
+    inData.vehicles = pd.read_csv(path, index_col=0)
+    return inData
 
 
 def make_config_paths(params, main=None, rel = False):

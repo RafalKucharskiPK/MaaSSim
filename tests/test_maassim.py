@@ -86,6 +86,25 @@ class TestSimulationResults(unittest.TestCase):
         self.assertEqual(inData.passengers.shape[0], params.nP)
         self.assertEqual(inData.vehicles.shape[0], params.nV)
 
+    def test_staticIO(self):
+        from MaaSSim.data_structures import structures as inData
+        from MaaSSim.utils import read_requests_csv, read_vehicle_positions
+        CONFIG_PATH = os.path.join(os.path.dirname(__file__), 'config_results_test.json')
+        params = get_config(CONFIG_PATH, root_path=os.path.dirname(__file__))  # load from .json file
+        inData = load_G(inData, params)  # load network graph
+        inData = prep_supply_and_demand(inData, params)  # generate supply and demand
+        inData.requests.to_csv('requests.csv')
+        inData.vehicles.to_csv('vehicles.csv')
+        sim1 = simulate(params = params, inData = inData) # simulate
+        inData = read_requests_csv(inData, path='requests.csv')
+        inData = read_vehicle_positions(inData, path = 'vehicles.csv')
+        sim2 = simulate(params=params, inData=inData)  # simulate
+        self.assertTrue(sim2.runs[0].trips.equals(sim1.runs[0].trips))
+        self.assertTrue(sim2.runs[0].rides.equals(sim1.runs[0].rides))
+
+
+
+
 
 
 
