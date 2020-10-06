@@ -138,7 +138,7 @@ class TestUtils(unittest.TestCase):
 class TestJupyters(unittest.TestCase):
     def setUp(self):
         from nbconvert.preprocessors import ExecutePreprocessor
-        self.ep = ExecutePreprocessor(timeout=600, kernel_name='python3')
+        self.ep = ExecutePreprocessor(timeout=600)
 
 
     def test_tutorials(self):
