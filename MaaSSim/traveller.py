@@ -132,7 +132,8 @@ class PassengerAgent(object):
                                        variability=self.sim.vars.request)  # time for transaction
 
                 # wait until either vehicle was found or pax lost his patience
-                yield self.got_offered
+                yield self.got_offered | self.sim.timeout(self.sim.params.times.patience,
+                                                        variability=self.sim.vars.patience)
 
                 # print(self.offers)
                 if len(self.offers) > 1:
@@ -147,8 +148,10 @@ class PassengerAgent(object):
                 else:
                     self.sim.logger.warn("pax {:>4}  {:40} {}".format(self.id, 'has no offers ',
                                                                       self.sim.print_now()))
-                yield self.found_veh | self.sim.timeout(self.sim.params.times.patience,
-                                                        variability=self.sim.vars.patience)
+                    self.leave_queues()
+                    self.msg = 'lost his patience and left the system'
+                if len(self.offers) > 0:
+                    yield self.found_veh
 
             else:
                 yield self.my_schedule_triggered | self.lost_shared_patience

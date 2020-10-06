@@ -133,7 +133,7 @@ class TestSimulationResults(unittest.TestCase):
         times = r[r.event == 'RECEIVES_OFFER'].t.sort_values(ascending=True).diff().dropna().unique()
 
         self.assertEqual(len(times), 2) # are requests batched ony at batch_time
-        self.assertEqual(times[-1],inData.platforms.iloc[0].batch_time)  # are they batched at batch_time
+        self.assertEqual(times.max(),inData.platforms.iloc[0].batch_time)  # are they batched at batch_time
 
 
     def tearDown(self):
@@ -176,8 +176,6 @@ class TestUtils(unittest.TestCase):
         params = get_config(os.path.join(os.path.dirname(__file__), 'configIO_test.json'),
                             root_path=os.path.dirname(__file__))  # load from .json file
         self.assertEqual(params.testIO, self.params.testIO)
-
-
 
 
 
