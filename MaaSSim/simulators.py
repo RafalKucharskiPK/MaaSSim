@@ -62,14 +62,14 @@ def simulate_parallel(config="../data/config/default.json", inData=None, params=
 
 
     brute(func=single_pararun,
-          ranges=slice_space(search_space, replications=params.parallel.nReplications),
+          ranges=slice_space(search_space, replications=params.parallel.get("nReplications",1)),
           args=(inData, params, search_space),
           full_output=True,
           finish=None,
-          workers=params.parallel.nThread)
+          workers=params.parallel.get('nThread',1))
 
 
-def simulate(config="../data/config/default.json", inData=None, params=None, **kwargs):
+def simulate(config="../data/config/parallel.json", inData=None, params=None, **kwargs):
     """
     main runner and wrapper
     loads or uses json config to prepare the data for simulation, run it and process the results

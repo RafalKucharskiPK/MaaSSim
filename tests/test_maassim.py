@@ -8,6 +8,8 @@ import unittest
 import os
 import sys
 import glob
+import subprocess
+import tempfile
 
 
 
@@ -80,7 +82,7 @@ class TestSimulationResults(unittest.TestCase):
         search_space = DotMap()
         search_space.nP = [20, 40]
         search_space.nV = [20, 40]
-        CONFIG_PATH = os.path.join(os.path.dirname(__file__), 'config_results_test.json')
+        CONFIG_PATH = os.path.join(os.path.dirname(__file__), 'config_parallel_test.json')
 
         simulate_parallel(config = CONFIG_PATH, search_space=search_space, root_path=os.path.dirname(__file__))
 
@@ -153,17 +155,20 @@ class TestJupyters(unittest.TestCase):
         for notebook in notebooks:
             if notebook[0] == '0':
                 print('testing: ',notebook)
-                with open(notebook) as f:
-                    nb = nbformat.read(f, as_version=4)
-                self.ep.preprocess(nb)
-
+                with tempfile.NamedTemporaryFile(suffix=".ipynb") as fout:
+                    args = ["jupyter", "nbconvert", "--to", "notebook", "--execute",
+                            "--ExecutePreprocessor.timeout=1000",
+                            "--output", fout.name, notebook]
+                    subprocess.check_call(args)
         # appendices
         for notebook in notebooks:
             if notebook[0] == 'A':
                 print('testing: ', notebook)
-                with open(notebook) as f:
-                    nb = nbformat.read(f, as_version=4)
-                self.ep.preprocess(nb)
+                with tempfile.NamedTemporaryFile(suffix=".ipynb") as fout:
+                    args = ["jupyter", "nbconvert", "--to", "notebook", "--execute",
+                            "--ExecutePreprocessor.timeout=1000",
+                            "--output", fout.name, notebook]
+                    subprocess.check_call(args)
 
 
 
