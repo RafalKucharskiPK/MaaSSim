@@ -25,7 +25,7 @@ install:
 script:
  - python -m unittest tests/test_maassim.py
  - coverage run -m unittest tests/test_maassim.py
- - py.test --nbval docs/tutorials
+ - py.test --nbval-lax docs/tutorials
 
 after_success:
  - coveralls
