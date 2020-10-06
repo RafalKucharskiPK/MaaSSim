@@ -143,8 +143,9 @@ class TestJupyters(unittest.TestCase):
 
     def test_tutorials(self):
         import nbformat
+        NOTEBOOKS_PATH = os.path.join(os.path.dirname(__file__), "../docs/tutorials")
 
-        os.chdir("../docs/tutorials")
+        os.chdir(NOTEBOOKS_PATH)
 
         notebooks = glob.glob('*.{}'.format('ipynb'))
 
