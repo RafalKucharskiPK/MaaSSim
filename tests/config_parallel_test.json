@@ -21,6 +21,7 @@
   },
   "t0":"17:00",
   "paths":{
+    "dumps":"dumps",
     "G":"../data/graphs/Nootdorp.graphml",
     "skim":"../data/graphs/Nootdorp.csv"
   },

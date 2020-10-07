@@ -123,12 +123,19 @@ class TestSimulationResults(unittest.TestCase):
         running parallel experiments on the multidimensional search space
         """
         from dotmap import DotMap
+        from MaaSSim.utils import collect_results
         search_space = DotMap()
         search_space.nP = [20, 40]
         search_space.nV = [20, 40]
         CONFIG_PATH = os.path.join(os.path.dirname(__file__), 'config_parallel_test.json')
+        params = get_config(CONFIG_PATH, root_path=os.path.dirname(__file__))  # load from .json file
 
         simulate_parallel(config = CONFIG_PATH, search_space=search_space, root_path=os.path.dirname(__file__))
+
+        res = collect_results(params.paths.dumps)  # collect the results from multiple experiments
+        self.assertNotEqual(res.rides.t.mean(), res.rides.t.std())
+        self.assertNotEqual(res.trips.t.mean(), res.trips.t.std())
+
 
     def tearDown(self):
         zips = glob.glob('*.{}'.format('zip'))
