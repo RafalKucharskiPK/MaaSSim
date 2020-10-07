@@ -17,8 +17,14 @@ from MaaSSim.utils import prep_supply_and_demand, get_config, load_G
 
 
 class TestSimulationResults(unittest.TestCase):
+    """
+    Basic tests
+    """
 
     def test_results(self):
+        """
+        Runs MaaSSim and inspects the results sim.runs[0].trips *.rides etc.
+        """
         CONFIG_PATH = os.path.join(os.path.dirname(__file__), 'config_results_test.json')
         # tests if results are as expected
         self.sim = simulate(config=CONFIG_PATH, root_path=os.path.dirname(__file__))  # run simulations
@@ -40,6 +46,9 @@ class TestSimulationResults(unittest.TestCase):
         self.assertIn('pax_exp', self.sim.res[0].keys())
 
     def test_consistency(self):
+        """
+        Runs MaaSSim and inspects the consistency of simulation for randomly selected few travellers
+        """
         CONFIG_PATH = os.path.join(os.path.dirname(__file__), 'config_consistency_test.json')
         self.sim = simulate(config=CONFIG_PATH, root_path=os.path.dirname(__file__))  # run simulations
 
@@ -77,6 +86,9 @@ class TestSimulationResults(unittest.TestCase):
                 self.assertTrue(flag)
 
     def test_prep(self):
+        """
+        tests if simulation is prepared properly (reuests, passengers, vehicles are generated)
+        """
         from MaaSSim.data_structures import structures as inData
         CONFIG_PATH = os.path.join(os.path.dirname(__file__), 'config_results_test.json')
         params = get_config(CONFIG_PATH, root_path=os.path.dirname(__file__))  # load from .json file
@@ -87,6 +99,9 @@ class TestSimulationResults(unittest.TestCase):
         self.assertEqual(inData.vehicles.shape[0], params.nV)
 
     def test_staticIO(self):
+        """
+        test if simulation can be restarted from static .csv file and yield the same results
+        """
         from MaaSSim.data_structures import structures as inData
         from MaaSSim.utils import read_requests_csv, read_vehicle_positions
         CONFIG_PATH = os.path.join(os.path.dirname(__file__), 'config_results_test.json')
@@ -104,6 +119,9 @@ class TestSimulationResults(unittest.TestCase):
 
 
     def test_parallel(self):
+        """
+        running parallel experiments on the multidimensional search space
+        """
         from dotmap import DotMap
         search_space = DotMap()
         search_space.nP = [20, 40]
@@ -112,12 +130,24 @@ class TestSimulationResults(unittest.TestCase):
 
         simulate_parallel(config = CONFIG_PATH, search_space=search_space, root_path=os.path.dirname(__file__))
 
+    def tearDown(self):
+        zips = glob.glob('*.{}'.format('zip'))
+        for zip in zips:
+            os.remove(zip)
+
+
+class TestFunctionalities(unittest.TestCase):
+    """
+    Test of MaaSSim capabilities, functionalities, extra features
+    """
 
     def test_batch_platform(self):
+        """
+        test if platform batches the results properly at matching
+        """
         from MaaSSim.utils import initialize_df
 
         from MaaSSim.data_structures import structures as inData
-        from MaaSSim.utils import read_requests_csv, read_vehicle_positions
         CONFIG_PATH = os.path.join(os.path.dirname(__file__), 'config_results_test.json')
         params = get_config(CONFIG_PATH, root_path=os.path.dirname(__file__))  # load from .json file
         inData = load_G(inData, params)  # load network graph
@@ -132,26 +162,44 @@ class TestSimulationResults(unittest.TestCase):
         r = sim.runs[0].trips
         times = r[r.event == 'RECEIVES_OFFER'].t.sort_values(ascending=True).diff().dropna().unique()
 
-        self.assertEqual(len(times), 2) # are requests batched ony at batch_time
-        self.assertEqual(times.max(),inData.platforms.iloc[0].batch_time)  # are they batched at batch_time
+        self.assertEqual(len(times), 2)  # are requests batched ony at batch_time
+        self.assertEqual(times.max(), inData.platforms.iloc[0].batch_time)  # are they batched at batch_time
+
+    def test_early_ending_shift_and_losing_patience(self):
+        """
+        test if platform batches the results properly at matching
+        """
+        from MaaSSim.traveller import travellerEvent
+        from MaaSSim.driver import driverEvent
+
+        from MaaSSim.data_structures import structures as inData
+        CONFIG_PATH = os.path.join(os.path.dirname(__file__), 'config_results_test.json')
+        params = get_config(CONFIG_PATH, root_path=os.path.dirname(__file__))  # load from .json file
+        params.nP = 2
+        params.nV = 1
+        params.times.patience = 30
+        inData = load_G(inData, params)  # load network graph
+        inData = prep_supply_and_demand(inData, params)  # generate supply and demand
+        inData.vehicles.shift_end = [100]  # vehicle ends early
+
+        sim = simulate(params=params, inData=inData, event_based=False)
+
+        self.assertIn(travellerEvent.LOSES_PATIENCE.name, sim.runs[0].trips.event.values)  # one traveller lost patience
+
+        r = sim.runs[0].rides
+        self.assertLess(r[r.event == driverEvent.ENDS_SHIFT.name].t.squeeze(),sim.t1)  # did he really end earlier
 
 
-    def tearDown(self):
-        zips = glob.glob('*.{}'.format('zip'))
-
-        for zip in zips:
-            os.remove(zip)
 
 
 
 
-    # def test_static_input(self):
-    #     CONFIG_PATH = os.path.join(os.path.dirname(__file__), 'config_static_input.json')
-    #     # tests if results are as expected
-    #     self.sim = simulate(config=CONFIG_PATH, root_path=os.path.dirname(__file__))  # run simulations
 
 
 class TestUtils(unittest.TestCase):
+    """
+    test input, output, utils, etc.
+    """
 
 
     def setUp(self):

@@ -8,7 +8,7 @@
 from MaaSSim.maassim import Simulator
 from MaaSSim.shared import prep_shared_rides
 from MaaSSim.utils import get_config, load_G, generate_demand, generate_vehicles, initialize_df, empty_series, \
-    slice_space, test_space, dummy_False, read_requests_csv
+    slice_space, test_space, dummy_False, read_requests_csv, read_vehicle_positions
 import numpy as np
 import pandas as pd
 from scipy.optimize import brute
@@ -90,7 +90,10 @@ def simulate(config="../data/config/default.json", inData=None, params=None, **k
         params = make_config_paths(params, main = kwargs.get('make_main_path',False), rel = True)
 
     if params.paths.get('requests', False):
-        inData.requests, inData.passengers = read_requests_csv(params.paths.requests)
+        inData = read_requests_csv(inData, path=params.paths.requests)
+
+    if params.paths.get('vehicles', False):
+        inData = read_vehicle_positions(inData, path=params.paths.vehicles)
 
     if params.paths.get('vehicles',False):
         inData.vehicles = pd.read_csv(params.paths.vehicles, index_col=1)
