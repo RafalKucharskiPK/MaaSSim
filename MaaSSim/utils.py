@@ -320,3 +320,26 @@ def slice_space(s, replications=1, _print=False):
         ret += [slice(0, replications, 1)]
     print('Search space to explore of dimensions {} and total size of {}'.format(sizes, size)) if _print else None
     return tuple(ret)
+
+def collect_results(path):
+    from pathlib import Path
+    import zipfile
+    collections = DotMap()
+    first = True
+    for path in Path(path).rglob('*.zip'):
+        zf = zipfile.ZipFile(path)
+        if first:
+            for file in zf.namelist():
+                collections[file[:-4]] = list()
+            first = False
+        for file in zf.namelist():
+            df = pd.read_csv(zf.open(file))
+            for key in path.stem.split('-')[1:]:
+                field, value = key.split('_')
+                df[field] = value
+
+            collections[file[:-4]].append(df)
+    for key in collections.keys():
+        collections[key] = pd.concat(collections[key])
+    return collections
+

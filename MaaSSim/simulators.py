@@ -13,6 +13,7 @@ import numpy as np
 import pandas as pd
 from scipy.optimize import brute
 import logging
+import re
 
 
 
@@ -28,11 +29,16 @@ def single_pararun(one_slice, *args):
         stamp[key] = val
         _params[key] = val
 
-    stamp['dt'] = pd.Timestamp.now()
-    filename = "".join([c for c in str(stamp) if c.isalpha() or c.isdigit() or c == ' ']).rstrip().replace(" ", "_")
+    stamp['dt'] = str(pd.Timestamp.now()).replace('-','').replace('.','').replace(' ','')
+
+
+    filename = ''
+    for key, value in stamp.items():
+        filename += '-{}_{}'.format(key, value)
+    filename = re.sub('[^-a-zA-Z0-9_.() ]+', '', filename)
 
     sim = simulate(inData=inData, params=_params, logger_level=logging.WARNING)
-    sim.dump(id=filename)  # store results
+    sim.dump(id=filename, path = _params.paths.get('dumps', None))  # store results
 
     print(filename, pd.Timestamp.now(), 'end')
     return 0

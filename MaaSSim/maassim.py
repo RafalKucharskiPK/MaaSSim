@@ -13,6 +13,7 @@ import time
 import numpy as np
 import os.path
 import zipfile
+from pathlib import Path
 
 from MaaSSim.traveller import PassengerAgent, travellerEvent
 from MaaSSim.driver import VehicleAgent, f_repos
@@ -243,6 +244,7 @@ class Simulator:
         """
         if path is None:
             path = os.getcwd()
+        Path(path).mkdir(parents=True, exist_ok=True)
 
         with zipfile.ZipFile(os.path.join(path, 'res{}.zip'.format(id)), 'w') as csv_zip:
             if inputs:
