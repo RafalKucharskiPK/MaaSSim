@@ -17,7 +17,7 @@
   },
   "parallel":{
     "nReplications":3,
-    "nThread":2
+    "nThread":1
   },
   "t0":"17:00",
   "paths":{
