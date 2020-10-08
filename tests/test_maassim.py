@@ -124,11 +124,12 @@ class TestSimulationResults(unittest.TestCase):
         """
         from dotmap import DotMap
         from MaaSSim.utils import collect_results
+
+        CONFIG_PATH = os.path.join(os.path.dirname(__file__), 'config_parallel_test.json')
+        params = get_config(CONFIG_PATH, root_path=os.path.dirname(__file__))  # load from .json file
         search_space = DotMap()
         search_space.nP = [20, 40]
         search_space.nV = [20, 40]
-        CONFIG_PATH = os.path.join(os.path.dirname(__file__), 'config_parallel_test.json')
-        params = get_config(CONFIG_PATH, root_path=os.path.dirname(__file__))  # load from .json file
 
         simulate_parallel(config = CONFIG_PATH, search_space=search_space, root_path=os.path.dirname(__file__))
 

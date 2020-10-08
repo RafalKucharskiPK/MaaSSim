@@ -146,7 +146,7 @@ class PassengerAgent(object):
                     else:
                         self.sim.plats[platform_id].handle_accepted(offer['pax_id'])
                 else:
-                    self.sim.logger.warn("pax {:>4}  {:40} {}".format(self.id, 'has no offers ',
+                    self.sim.logger.info("pax {:>4}  {:40} {}".format(self.id, 'has no offers ',
                                                                       self.sim.print_now()))
                     self.leave_queues()
                     self.msg = 'lost his patience and left the system'

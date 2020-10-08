@@ -200,7 +200,7 @@ class Simulator:
         # basic checks for results consistency and correctness
         rides = self.runs[0].rides  # vehicles record
         trips = self.runs[0].trips  # travellers record
-        for i in self.inData.passengers.sample(min(5, self.params.nP)).index.to_list():
+        for i in self.inData.passengers.sample(min(5, self.inData.passengers.shape[0])).index.to_list():
             r = self.inData.requests[self.inData.requests.pax_id == i].iloc[0].squeeze()  # that is his request
             o, d = r['origin'], r['destination']  # his origin and destination
             trip = trips[trips.pax == i]  # his trip

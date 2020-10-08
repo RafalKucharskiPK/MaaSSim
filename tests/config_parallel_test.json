@@ -22,8 +22,8 @@
   "t0":"17:00",
   "paths":{
     "dumps":"dumps",
-    "G":"../data/graphs/Nootdorp.graphml",
-    "skim":"../data/graphs/Nootdorp.csv"
+    "G":"../data/graphs/Delft.graphml",
+    "skim":"../data/graphs/Delft.csv"
   },
   "dist_threshold":100000,
   "big_time":10,

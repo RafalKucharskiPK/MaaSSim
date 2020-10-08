@@ -31,13 +31,15 @@ def single_pararun(one_slice, *args):
 
     stamp['dt'] = str(pd.Timestamp.now()).replace('-','').replace('.','').replace(' ','')
 
-
     filename = ''
     for key, value in stamp.items():
         filename += '-{}_{}'.format(key, value)
     filename = re.sub('[^-a-zA-Z0-9_.() ]+', '', filename)
+    _inData.passengers = initialize_df(_inData.passengers)
+    _inData.requests = initialize_df(_inData.requests)
+    _inData.vehicles = initialize_df(_inData.vehicles)
 
-    sim = simulate(inData=inData, params=_params, logger_level=logging.WARNING)
+    sim = simulate(inData=_inData, params=_params, logger_level=logging.WARNING)
     sim.dump(id=filename, path = _params.paths.get('dumps', None))  # store results
 
     print(filename, pd.Timestamp.now(), 'end')
