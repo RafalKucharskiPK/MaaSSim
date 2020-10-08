@@ -103,9 +103,6 @@ def simulate(config="../data/config/default.json", inData=None, params=None, **k
     if params.paths.get('vehicles', False):
         inData = read_vehicle_positions(inData, path=params.paths.vehicles)
 
-    if params.paths.get('vehicles',False):
-        inData.vehicles = pd.read_csv(params.paths.vehicles, index_col=1)
-
     if len(inData.G) == 0:  # only if no graph in input
         inData = load_G(inData, params, stats=True)  # download graph for the 'params.city' and calc the skim matrices
     if len(inData.passengers) == 0:  # only if no passengers in input

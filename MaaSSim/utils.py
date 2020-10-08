@@ -171,6 +171,11 @@ def generate_demand(_inData, _params=None, avg_speed=False):
     # generates nP requests with a given temporal and spatial distribution of origins and destinations
     # returns _inData with dataframes requests and passengers populated.
 
+    try:
+        _params.t0 = pd.to_datetime(_params.t0)
+    except:
+        pass
+
     df = pd.DataFrame(index=np.arange(0, _params.nP), columns=_inData.passengers.columns)
     df.status = travellerEvent.STARTS_DAY
     df.pos = _inData.nodes.sample(_params.nP).index  # df.pos = df.apply(lambda x: rand_node(_inData.nodes), axis=1)
