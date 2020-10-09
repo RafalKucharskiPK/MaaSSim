@@ -12,7 +12,8 @@ import random
 
 sys.path.append(os.path.join(os.path.dirname(__file__), '..'))  # add local path for Travis CI
 from MaaSSim.simulators import simulate, simulate_parallel
-from MaaSSim.utils import prep_supply_and_demand, get_config, load_G
+from MaaSSim.utils import prep_supply_and_demand, get_config, load_G, generate_demand, generate_vehicles, initialize_df
+from MaaSSim.traveller import f_platform_choice
 
 
 class TestSimulationResults(unittest.TestCase):
@@ -220,7 +221,7 @@ class TestFunctionalities(unittest.TestCase):
         self.assertNotEqual(sim.runs[0].trips.values, sim.runs[1].trips.values)
 
     def test_rejects(self):
-        # make su
+        # make sure that rejection works for drivers and travellers (dummy reject with fixed probability)
         from MaaSSim.utils import dummy_False
         from MaaSSim.traveller import travellerEvent
         from MaaSSim.driver import driverEvent
@@ -286,6 +287,54 @@ class TestFunctionalities(unittest.TestCase):
         self.assertIn(driverEvent.IS_REJECTED_BY_TRAVELLER.name,
                       sim.runs[3].rides.event.values)  # no rejections
 
+    def test_platform_competition(self):
+        # make sure when you compete with the prcie, lowering the fare and increasing the fee
+        from MaaSSim.data_structures import structures as inData
+
+        CONFIG_PATH = os.path.join(os.path.dirname(__file__), 'config_platform_choices.json')
+        params = get_config(CONFIG_PATH, root_path=os.path.dirname(__file__))  # load from .json file
+        params.nP = 50  # reuqests (and passengers)
+        params.simTime = 4
+        params.nD = 1
+
+        fare = 1
+        fleet = 20
+        params.nV = 20 + fleet
+        inData = load_G(inData, params,
+                        stats=True)  # download graph for the 'params.city' and calc the skim matrices
+        inData = generate_demand(inData, params, avg_speed=True)
+        inData.vehicles = generate_vehicles(inData, params.nV)
+        inData.platforms = initialize_df(inData.platforms)
+        inData.platforms.loc[0] = [1, 'Platform1', 30]
+        inData.platforms.loc[1] = [fare, 'Platform2', 30]
+        inData = generate_demand(inData, params, avg_speed=True)
+        inData.vehicles = generate_vehicles(inData, params.nV)
+        inData.vehicles.platform = [0] * 20 + [1] * fleet
+
+        inData.passengers.platforms = inData.passengers.apply(lambda x: [0, 1], axis=1)
+        sim = simulate(params=params, inData=inData, print=False, f_platform_choice=f_platform_choice)
+        ret = sim.res[0].veh_exp
+        ret['platform'] = inData.vehicles.platform
+        first = ret[ret.platform == 1].ARRIVES_AT_DROPOFF.sum()
+
+        fare = 0.5
+        fleet = 30
+        params.nV = 20 + fleet
+        inData = generate_demand(inData, params, avg_speed=True)
+        inData.vehicles = generate_vehicles(inData, params.nV)
+        inData.platforms = initialize_df(inData.platforms)
+        inData.platforms.loc[0] = [1, 'Platform1', 30]
+        inData.platforms.loc[1] = [fare, 'Platform2', 30]
+        inData = generate_demand(inData, params, avg_speed=True)
+        inData.vehicles = generate_vehicles(inData, params.nV)
+        inData.vehicles.platform = [0] * 20 + [1] * fleet
+
+        inData.passengers.platforms = inData.passengers.apply(lambda x: [0, 1], axis=1)
+        sim = simulate(params=params, inData=inData, print=False, f_platform_choice=f_platform_choice)
+        ret = sim.res[0].veh_exp
+        ret['platform'] = inData.vehicles.platform
+        second = ret[ret.platform == 1].ARRIVES_AT_DROPOFF.sum()
+        self.assertGreater(second,first)
 
 class TestUtils(unittest.TestCase):
     """
