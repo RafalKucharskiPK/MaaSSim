@@ -8,8 +8,7 @@ import unittest
 import os
 import sys
 import glob
-
-
+import random
 
 sys.path.append(os.path.join(os.path.dirname(__file__), '..'))  # add local path for Travis CI
 from MaaSSim.simulators import simulate, simulate_parallel
@@ -36,10 +35,10 @@ class TestSimulationResults(unittest.TestCase):
         self.assertGreater(self.sim.runs[0].trips.pos.nunique(), self.sim.params.nP)  # do we travel around the city
 
         self.assertGreater(self.sim.runs[0].trips.t.max(),
-                           0.5 * self.sim.params.simTime * 60 * 60) # do we span at least half of simulation time?)
+                           0.5 * self.sim.params.simTime * 60 * 60)  # do we span at least half of simulation time?)
 
         paxes = self.sim.runs[0].rides.paxes.apply(lambda x: tuple(x))
-        self.assertGreater(paxes.nunique(), self.sim.params.nP/2)  # at least half of travellers got the ride
+        self.assertGreater(paxes.nunique(), self.sim.params.nP / 2)  # at least half of travellers got the ride
 
         self.assertGreater(self.sim.res[0].veh_exp["ARRIVES_AT_PICKUP"].max(), 0)  # is there any vehicle RIDING?
 
@@ -110,13 +109,12 @@ class TestSimulationResults(unittest.TestCase):
         inData = prep_supply_and_demand(inData, params)  # generate supply and demand
         inData.requests.to_csv('requests.csv')
         inData.vehicles.to_csv('vehicles.csv')
-        sim1 = simulate(params = params, inData = inData) # simulate
+        sim1 = simulate(params=params, inData=inData)  # simulate
         inData = read_requests_csv(inData, path='requests.csv')
-        inData = read_vehicle_positions(inData, path = 'vehicles.csv')
+        inData = read_vehicle_positions(inData, path='vehicles.csv')
         sim2 = simulate(params=params, inData=inData)  # simulate
         self.assertTrue(sim2.runs[0].trips.equals(sim1.runs[0].trips))
         self.assertTrue(sim2.runs[0].rides.equals(sim1.runs[0].rides))
-
 
     def test_parallel(self):
         """
@@ -131,12 +129,11 @@ class TestSimulationResults(unittest.TestCase):
         search_space.nP = [20, 40]
         search_space.nV = [20, 40]
 
-        simulate_parallel(config = CONFIG_PATH, search_space=search_space, root_path=os.path.dirname(__file__))
+        simulate_parallel(config=CONFIG_PATH, search_space=search_space, root_path=os.path.dirname(__file__))
 
         res = collect_results(params.paths.dumps)  # collect the results from multiple experiments
         self.assertNotEqual(res.rides.t.mean(), res.rides.t.std())
         self.assertNotEqual(res.trips.t.mean(), res.trips.t.std())
-
 
     def tearDown(self):
         zips = glob.glob('*.{}'.format('zip'))
@@ -195,13 +192,99 @@ class TestFunctionalities(unittest.TestCase):
         self.assertIn(travellerEvent.LOSES_PATIENCE.name, sim.runs[0].trips.event.values)  # one traveller lost patience
 
         r = sim.runs[0].rides
-        self.assertLess(r[r.event == driverEvent.ENDS_SHIFT.name].t.squeeze(),sim.t1)  # did he really end earlier
+        self.assertLess(r[r.event == driverEvent.ENDS_SHIFT.name].t.squeeze(), sim.t1)  # did he really end earlier
 
+    def test_multiple_runs(self):
+        # have two runs in the same instance and see if they are different
 
+        from MaaSSim.data_structures import structures as inData
+        CONFIG_PATH = os.path.join(os.path.dirname(__file__), 'config_results_test.json')
 
+        def rand_reject8(**kwargs):
+            # sample function to reject with probability of 80%
+            return random.random() >= 0.2
 
+        params = get_config(CONFIG_PATH, root_path=os.path.dirname(__file__))  # load from .json file
 
+        params.times.patience = 3600  # 1 hour of simulation
+        params.simTime = 1  # 1 hour of simulation
+        params.nP = 100  # reuqests (and passengers)
+        params.nV = 100  # vehicles
 
+        # A no rejections
+        sim = simulate(params=params, inData=inData)
+        self.assertEqual(len(sim.runs), 1)
+        sim.make_and_run(f_driver_decline=rand_reject8)  # change something and re run
+        self.assertEqual(len(sim.runs), 2)
+        self.assertNotEqual(sim.runs[0].trips.values, sim.runs[1].trips.values)
+        self.assertNotEqual(sim.runs[0].trips.values, sim.runs[1].trips.values)
+
+    def test_rejects(self):
+        # make su
+        from MaaSSim.utils import dummy_False
+        from MaaSSim.traveller import travellerEvent
+        from MaaSSim.driver import driverEvent
+        from MaaSSim.data_structures import structures as inData
+        CONFIG_PATH = os.path.join(os.path.dirname(__file__), 'config_results_test.json')
+
+        def rand_reject8(**kwargs):
+            # sample function to reject with probability of 80%
+            return random.random() >= 0.2
+
+        params = get_config(CONFIG_PATH, root_path=os.path.dirname(__file__))  # load from .json file
+
+        params.times.patience = 3600  # 1 hour of simulation
+        params.simTime = 1  # 1 hour of simulation
+        params.nP = 100  # reuqests (and passengers)
+        params.nV = 100  # vehicles
+
+        # A no rejections
+        sim = simulate(params=params, inData=inData)
+        self.assertNotIn(travellerEvent.IS_REJECTED_BY_VEHICLE.name,
+                         sim.runs[0].trips.event.values)  # no rejections
+        self.assertNotIn(travellerEvent.REJECTS_OFFER.name,
+                         sim.runs[0].trips.event.values)  # no rejections
+
+        self.assertNotIn(driverEvent.REJECTS_REQUEST.name,
+                         sim.runs[0].rides.event.values)  # no rejections
+        self.assertNotIn(driverEvent.IS_REJECTED_BY_TRAVELLER.name,
+                         sim.runs[0].rides.event.values)  # no rejections
+
+        # B vehicle rejects
+        sim.make_and_run(f_trav_mode=dummy_False, f_driver_decline=rand_reject8)
+        self.assertIn(travellerEvent.IS_REJECTED_BY_VEHICLE.name,
+                      sim.runs[1].trips.event.values)  # no rejections
+        self.assertNotIn(travellerEvent.REJECTS_OFFER.name,
+                         sim.runs[1].trips.event.values)  # no rejections
+
+        self.assertIn(driverEvent.REJECTS_REQUEST.name,
+                      sim.runs[1].rides.event.values)  # no rejections
+        self.assertNotIn(driverEvent.IS_REJECTED_BY_TRAVELLER.name,
+                         sim.runs[1].rides.event.values)  # no rejections
+
+        # # C traveller rejects
+        sim.make_and_run(f_trav_mode=rand_reject8, f_driver_decline=dummy_False)
+        self.assertNotIn(travellerEvent.IS_REJECTED_BY_VEHICLE.name,
+                         sim.runs[2].trips.event.values)  # no rejections
+        self.assertIn(travellerEvent.REJECTS_OFFER.name,
+                      sim.runs[2].trips.event.values)  # no rejections
+
+        self.assertNotIn(driverEvent.REJECTS_REQUEST.name,
+                         sim.runs[2].rides.event.values)  # no rejections
+        self.assertIn(driverEvent.IS_REJECTED_BY_TRAVELLER.name,
+                      sim.runs[2].rides.event.values)  # no rejections
+        #
+        # # D both reject
+        sim.make_and_run(f_trav_mode=rand_reject8, f_driver_decline=rand_reject8)
+        self.assertIn(travellerEvent.IS_REJECTED_BY_VEHICLE.name,
+                      sim.runs[3].trips.event.values)  # no rejections
+        self.assertIn(travellerEvent.REJECTS_OFFER.name,
+                      sim.runs[3].trips.event.values)  # no rejections
+
+        self.assertIn(driverEvent.REJECTS_REQUEST.name,
+                      sim.runs[3].rides.event.values)  # no rejections
+        self.assertIn(driverEvent.IS_REJECTED_BY_TRAVELLER.name,
+                      sim.runs[3].rides.event.values)  # no rejections
 
 
 class TestUtils(unittest.TestCase):
@@ -209,23 +292,21 @@ class TestUtils(unittest.TestCase):
     test input, output, utils, etc.
     """
 
-
     def setUp(self):
         from MaaSSim.data_structures import structures
         from MaaSSim.utils import get_config, make_config_paths
-
 
         self.inData = structures.copy()  # fresh data
         CONFIG_PATH = os.path.join(os.path.dirname(__file__), 'config_utils_test.json')
         self.params = get_config(CONFIG_PATH, root_path=os.path.dirname(__file__))  # load from .json file
 
     def test_configIO(self):
-        from MaaSSim.utils import  make_config_paths
+        from MaaSSim.utils import make_config_paths
         CONFIG_PATH = os.path.join(os.path.dirname(__file__), 'config_utils_test.json')
 
         from MaaSSim.utils import get_config, save_config
         self.params = get_config(CONFIG_PATH, root_path=os.path.dirname(__file__))  # load from .json file
-        params = make_config_paths(self.params, main = 'test_path', rel = True)
+        params = make_config_paths(self.params, main='test_path', rel=True)
         self.assertEqual(params.paths.G[0:9], 'test_path')
         self.params.testIO = '12'
         save_config(self.params, os.path.join(os.path.dirname(__file__), 'configIO_test.json'))
@@ -233,33 +314,28 @@ class TestUtils(unittest.TestCase):
                             root_path=os.path.dirname(__file__))  # load from .json file
         self.assertEqual(params.testIO, self.params.testIO)
 
-
-
     def test_networkIO(self):
         from numpy import inf
         from MaaSSim.utils import load_G, download_G, save_G
 
         self.params.city = 'Wieliczka, Poland'
 
-        self.params.paths.G = os.path.join(os.path.dirname(__file__), self.params.city.split(",")[0] + ".graphml")  # graphml of a current .city
-        self.params.paths.skim = os.path.join(os.path.dirname(__file__), self.params.city.split(",")[0] + ".csv")  # csv with a skim between the nodes of the .city
+        self.params.paths.G = os.path.join(os.path.dirname(__file__),
+                                           self.params.city.split(",")[0] + ".graphml")  # graphml of a current .city
+        self.params.paths.skim = os.path.join(os.path.dirname(__file__), self.params.city.split(",")[
+            0] + ".csv")  # csv with a skim between the nodes of the .city
 
+        self.inData = download_G(self.inData, self.params)  # download the graph and compute the skim
+        save_G(self.inData, self.params)  # save it to params.paths.G
+        self.inData = load_G(self.inData, self.params,
+                             stats=True)  # download graph for the 'params.city' and calc the skim matrices
 
-        self.inData = download_G(self.inData, self.params) # download the graph and compute the skim
-        save_G(self.inData, self.params) # save it to params.paths.G
-        self.inData = load_G(self.inData, self.params, stats=True)  # download graph for the 'params.city' and calc the skim matrices
-
-        self.assertGreater(self.inData.nodes.shape[0],10)  # do we have nodes
+        self.assertGreater(self.inData.nodes.shape[0], 10)  # do we have nodes
         self.assertGreater(self.inData.skim.shape[0], 10)  # do we have skim
         self.assertLess(self.inData.skim.mean().mean(), inf)  # and values inside
-        self.assertGreater(self.inData.skim.mean().mean(),0)  # positive distances
+        self.assertGreater(self.inData.skim.mean().mean(), 0)  # positive distances
 
     def tearDown(self):
         pass
-        #os.remove(self.params.paths.G)
-        #os.remove(self.params.paths.skim)
-
-
-
-
-
+        # os.remove(self.params.paths.G)
+        # os.remove(self.params.paths.skim)
