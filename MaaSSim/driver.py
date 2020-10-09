@@ -5,6 +5,8 @@
 ################################################################################
 from enum import Enum
 import time
+from numpy import nan
+import pandas as pd
 from dotmap import DotMap
 
 
@@ -183,11 +185,55 @@ class VehicleAgent(object):
 # FUNCTIONS #
 # ######### #
 
-def f_vehout(*args, **kwargs):
+def f_driver_out(*args, **kwargs):
     # it uses veh_exp of a vehicle populated in previous run
     # returns boolean True if vehicle decides to opt out
+    import random
+    leave_threshold  = 0.25
+    back_threshold = 0.5
+    unserved_threshold = 0.05
+    anneal = 0.2
+
     veh = kwargs.get('veh', None)
-    return False
+    sim = veh.sim
+    flag = False
+    if len(sim.runs)==0:
+        msg = 'veh {} runs on'.format(veh.id)
+    else:
+        last_run =sim.run_ids[-1]
+        quant_yesterday =  sim.res[last_run].veh_exp.nRIDES.quantile(leave_threshold)
+        avg_yesterday = sim.res[last_run].veh_exp.nRIDES.quantile(back_threshold)
+        prev_rides = pd.Series([sim.res[_].veh_exp.loc[veh.id].nRIDES for _ in sim.run_ids]).mean()
+        rides_yesterday = sim.res[last_run].veh_exp.loc[veh.id].nRIDES
+        unserved_demand_yesterday = sim.res[last_run].pax_exp[sim.res[last_run].pax_exp.LOSES_PATIENCE>0].shape[0]/ \
+                                    sim.res[last_run].pax_exp.shape[0]
+        if sim.res[last_run].veh_exp.loc[veh.id].ENDS_SHIFT == 0:
+            if avg_yesterday < prev_rides:
+                msg = 'veh {} stays out'.format(veh.id)
+                flag = True
+            elif unserved_demand_yesterday>unserved_threshold:
+                if random.random()<anneal:
+                    print('wracamyyy!')
+                    msg = 'veh {} comes to serve unserved'.format(veh.id)
+                    flag = False
+                else:
+                    msg = 'veh {} someone else come to serve unserved'.format(veh.id)
+                    flag = False
+            else:
+                msg = 'veh {} comes back'.format(veh.id)
+                flag = False
+
+            pass
+        else:
+            if rides_yesterday > quant_yesterday:
+                msg = 'veh {} stays in'.format(veh.id)
+                flag = False
+            else:
+                msg = 'veh {} leaves'.format(veh.id)
+                flag = True
+
+    sim.logger.info('DRIVER OUT: '+msg)
+    return flag
 
 
 def f_repos(*args, **kwargs):

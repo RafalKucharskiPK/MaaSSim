@@ -126,6 +126,25 @@ def simulate(config="../data/config/default.json", inData=None, params=None, **k
     return sim
 
 
+def f_stop_crit(*args, **kwargs):
+    sim = kwargs.get('sim', None)
+    convergence_threshold = -1
+    if len(sim.runs)<2:
+        sim.logger.warn('Early days')
+        return False
+    else:
+        # convergence on waiting times
+        convergence = abs((sim.res[sim.run_ids[-1]].pax_kpi['MEETS_DRIVER_AT_PICKUP']['mean']-
+                                sim.res[sim.run_ids[-2]].pax_kpi['MEETS_DRIVER_AT_PICKUP']['mean'])/
+                               sim.res[sim.run_ids[-2]].pax_kpi['MEETS_DRIVER_AT_PICKUP']['mean'])
+        if convergence < convergence_threshold:
+            sim.logger.warn('CONVERGED to {} after {} days'.format(convergence, sim.run_ids[-1]))
+            return True
+        else:
+            sim.logger.warn('NOT CONVERGED to {} after {} days'.format(convergence, sim.run_ids[-1]))
+            return False
+
+
 if __name__ == "__main__":
     simulate(make_main_path='..')  # single run
 

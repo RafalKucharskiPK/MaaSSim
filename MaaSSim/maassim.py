@@ -227,7 +227,11 @@ class Simulator:
                     flag = True
                 elif travellerEvent.REJECTS_OFFER.name in trip.event.values:
                     flag = True
-                assert flag == True
+                try:
+                    assert flag == True
+                except AssertionError:
+                    print(trip.event.unique())
+                    assert flag == True
         self.logger.warning('assertion tests for simulation results - passed')
         # except:
         #     self.logger.info('assertion tests for simulation results - failed')
@@ -285,4 +289,3 @@ class Simulator:
     def plot_trip(self, pax_id, run_id=None):
         from MaaSSim.visualizations import plot_trip
         plot_trip(self,pax_id, run_id = run_id)
-

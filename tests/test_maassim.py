@@ -11,9 +11,11 @@ import glob
 import random
 
 sys.path.append(os.path.join(os.path.dirname(__file__), '..'))  # add local path for Travis CI
-from MaaSSim.simulators import simulate, simulate_parallel
+from MaaSSim.simulators import simulate, simulate_parallel, f_stop_crit
 from MaaSSim.utils import prep_supply_and_demand, get_config, load_G, generate_demand, generate_vehicles, initialize_df
 from MaaSSim.traveller import f_platform_choice
+from MaaSSim.driver import f_driver_out
+
 
 
 class TestSimulationResults(unittest.TestCase):
@@ -44,6 +46,7 @@ class TestSimulationResults(unittest.TestCase):
         self.assertGreater(self.sim.res[0].veh_exp["ARRIVES_AT_PICKUP"].max(), 0)  # is there any vehicle RIDING?
 
         self.assertIn('pax_exp', self.sim.res[0].keys())
+        del self.sim
 
     def test_consistency(self):
         """
@@ -84,6 +87,7 @@ class TestSimulationResults(unittest.TestCase):
                 elif travellerEvent.REJECTS_OFFER.name in trip.event.values:
                     flag = True
                 self.assertTrue(flag)
+        del self.sim
 
     def test_prep(self):
         """
@@ -97,6 +101,7 @@ class TestSimulationResults(unittest.TestCase):
         self.assertEqual(inData.requests.shape[0], params.nP)
         self.assertEqual(inData.passengers.shape[0], params.nP)
         self.assertEqual(inData.vehicles.shape[0], params.nV)
+
 
     def test_staticIO(self):
         """
@@ -116,6 +121,9 @@ class TestSimulationResults(unittest.TestCase):
         sim2 = simulate(params=params, inData=inData)  # simulate
         self.assertTrue(sim2.runs[0].trips.equals(sim1.runs[0].trips))
         self.assertTrue(sim2.runs[0].rides.equals(sim1.runs[0].rides))
+        del sim2
+        del sim1
+
 
     def test_parallel(self):
         """
@@ -135,6 +143,7 @@ class TestSimulationResults(unittest.TestCase):
         res = collect_results(params.paths.dumps)  # collect the results from multiple experiments
         self.assertNotEqual(res.rides.t.mean(), res.rides.t.std())
         self.assertNotEqual(res.trips.t.mean(), res.trips.t.std())
+
 
     def tearDown(self):
         zips = glob.glob('*.{}'.format('zip'))
@@ -195,6 +204,24 @@ class TestFunctionalities(unittest.TestCase):
         r = sim.runs[0].rides
         self.assertLess(r[r.event == driverEvent.ENDS_SHIFT.name].t.squeeze(), sim.t1)  # did he really end earlier
 
+    def test_multiple_days(self):
+        # have two runs in the same instance and see if they are different
+
+        from MaaSSim.data_structures import structures as inData
+        CONFIG_PATH = os.path.join(os.path.dirname(__file__), 'config_results_test.json')
+        params = get_config(CONFIG_PATH, root_path=os.path.dirname(__file__))  # load from .json file
+
+        params.times.patience = 3600  # 1 hour of simulation
+        params.simTime = 1  # 1 hour of simulation
+
+        params.nP = 10  # reuqests (and passengers)
+        params.nV = 10  # vehicles
+        params.nD = 10
+
+        # A no rejections
+        sim = simulate(params=params, inData=inData)
+        self.assertEqual(len(sim.runs), 10)
+
     def test_multiple_runs(self):
         # have two runs in the same instance and see if they are different
 
@@ -219,6 +246,7 @@ class TestFunctionalities(unittest.TestCase):
         self.assertEqual(len(sim.runs), 2)
         self.assertNotEqual(sim.runs[0].trips.values, sim.runs[1].trips.values)
         self.assertNotEqual(sim.runs[0].trips.values, sim.runs[1].trips.values)
+        del sim
 
     def test_rejects(self):
         # make sure that rejection works for drivers and travellers (dummy reject with fixed probability)
@@ -240,52 +268,54 @@ class TestFunctionalities(unittest.TestCase):
         params.nV = 100  # vehicles
 
         # A no rejections
-        sim = simulate(params=params, inData=inData)
+
+        sim2 = simulate(params=params, inData=inData,  f_platform_choice=dummy_False)
         self.assertNotIn(travellerEvent.IS_REJECTED_BY_VEHICLE.name,
-                         sim.runs[0].trips.event.values)  # no rejections
+                         sim2.runs[0].trips.event.values)  # no rejections
         self.assertNotIn(travellerEvent.REJECTS_OFFER.name,
-                         sim.runs[0].trips.event.values)  # no rejections
+                         sim2.runs[0].trips.event.values)  # no rejections
 
         self.assertNotIn(driverEvent.REJECTS_REQUEST.name,
-                         sim.runs[0].rides.event.values)  # no rejections
+                         sim2.runs[0].rides.event.values)  # no rejections
         self.assertNotIn(driverEvent.IS_REJECTED_BY_TRAVELLER.name,
-                         sim.runs[0].rides.event.values)  # no rejections
+                         sim2.runs[0].rides.event.values)  # no rejections
 
         # B vehicle rejects
-        sim.make_and_run(f_trav_mode=dummy_False, f_driver_decline=rand_reject8)
+        sim2.make_and_run(f_trav_mode=dummy_False, f_driver_decline=rand_reject8,  f_platform_choice=dummy_False)
         self.assertIn(travellerEvent.IS_REJECTED_BY_VEHICLE.name,
-                      sim.runs[1].trips.event.values)  # no rejections
+                      sim2.runs[1].trips.event.values)  # no rejections
         self.assertNotIn(travellerEvent.REJECTS_OFFER.name,
-                         sim.runs[1].trips.event.values)  # no rejections
+                         sim2.runs[1].trips.event.values)  # no rejections
 
         self.assertIn(driverEvent.REJECTS_REQUEST.name,
-                      sim.runs[1].rides.event.values)  # no rejections
+                      sim2.runs[1].rides.event.values)  # no rejections
         self.assertNotIn(driverEvent.IS_REJECTED_BY_TRAVELLER.name,
-                         sim.runs[1].rides.event.values)  # no rejections
+                         sim2.runs[1].rides.event.values)  # no rejections
 
         # # C traveller rejects
-        sim.make_and_run(f_trav_mode=rand_reject8, f_driver_decline=dummy_False)
+        sim2.make_and_run(f_trav_mode=rand_reject8, f_driver_decline=dummy_False, f_platform_choice=dummy_False)
         self.assertNotIn(travellerEvent.IS_REJECTED_BY_VEHICLE.name,
-                         sim.runs[2].trips.event.values)  # no rejections
+                         sim2.runs[2].trips.event.values)  # no rejections
         self.assertIn(travellerEvent.REJECTS_OFFER.name,
-                      sim.runs[2].trips.event.values)  # no rejections
+                      sim2.runs[2].trips.event.values)  # no rejections
 
         self.assertNotIn(driverEvent.REJECTS_REQUEST.name,
-                         sim.runs[2].rides.event.values)  # no rejections
+                         sim2.runs[2].rides.event.values)  # no rejections
         self.assertIn(driverEvent.IS_REJECTED_BY_TRAVELLER.name,
-                      sim.runs[2].rides.event.values)  # no rejections
+                      sim2.runs[2].rides.event.values)  # no rejections
         #
         # # D both reject
-        sim.make_and_run(f_trav_mode=rand_reject8, f_driver_decline=rand_reject8)
+        sim2.make_and_run(f_trav_mode=rand_reject8, f_driver_decline=rand_reject8, f_platform_choice=dummy_False)
         self.assertIn(travellerEvent.IS_REJECTED_BY_VEHICLE.name,
-                      sim.runs[3].trips.event.values)  # no rejections
+                      sim2.runs[3].trips.event.values)  # no rejections
         self.assertIn(travellerEvent.REJECTS_OFFER.name,
-                      sim.runs[3].trips.event.values)  # no rejections
+                      sim2.runs[3].trips.event.values)  # no rejections
 
         self.assertIn(driverEvent.REJECTS_REQUEST.name,
-                      sim.runs[3].rides.event.values)  # no rejections
+                      sim2.runs[3].rides.event.values)  # no rejections
         self.assertIn(driverEvent.IS_REJECTED_BY_TRAVELLER.name,
-                      sim.runs[3].rides.event.values)  # no rejections
+                      sim2.runs[3].rides.event.values)  # no rejections
+        del sim2
 
     def test_platform_competition(self):
         # make sure when you compete with the prcie, lowering the fare and increasing the fee
@@ -293,11 +323,11 @@ class TestFunctionalities(unittest.TestCase):
 
         CONFIG_PATH = os.path.join(os.path.dirname(__file__), 'config_platform_choices.json')
         params = get_config(CONFIG_PATH, root_path=os.path.dirname(__file__))  # load from .json file
-        params.nP = 50  # reuqests (and passengers)
+        params.nP = 200  # reuqests (and passengers)
         params.simTime = 4
         params.nD = 1
 
-        fare = 1
+        fare = 1.5
         fleet = 20
         params.nV = 20 + fleet
         inData = load_G(inData, params,
@@ -318,7 +348,7 @@ class TestFunctionalities(unittest.TestCase):
         first = ret[ret.platform == 1].ARRIVES_AT_DROPOFF.sum()
 
         fare = 0.5
-        fleet = 30
+        fleet = 50
         params.nV = 20 + fleet
         inData = generate_demand(inData, params, avg_speed=True)
         inData.vehicles = generate_vehicles(inData, params.nV)
@@ -335,6 +365,30 @@ class TestFunctionalities(unittest.TestCase):
         ret['platform'] = inData.vehicles.platform
         second = ret[ret.platform == 1].ARRIVES_AT_DROPOFF.sum()
         self.assertGreater(second,first)
+
+    def test_driver_out(self):
+        from MaaSSim.data_structures import structures as inData
+        from MaaSSim.utils import dummy_False
+        def rand_reject8(**kwargs):
+            # sample function to reject with probability of 80%
+            return random.random() >= 0.2
+
+        CONFIG_PATH = os.path.join(os.path.dirname(__file__), 'config_platform_choices.json')
+        params = get_config(CONFIG_PATH, root_path=os.path.dirname(__file__))  # load from .json file
+        params.times.patience = 600  # 1 hour of simulation
+        params.nP = 100  # reuqests (and passengers)
+        params.nV = 50  # vehicles
+        params.simTime = 4
+        params.nD = 1
+        sim = simulate(params=params, f_driver_out=dummy_False)
+        self.assertEqual(sim.res[0].veh_exp[sim.res[0].veh_exp.ENDS_SHIFT == 0].shape[0],0)
+        del sim
+        params.nD = 2
+        sim = simulate(params=params, f_driver_out=f_driver_out)
+        self.assertGreater(sim.res[1].veh_exp[sim.res[1].veh_exp.ENDS_SHIFT == 0].shape[0], 0)
+
+
+
 
 class TestUtils(unittest.TestCase):
     """
