@@ -191,7 +191,7 @@ def f_driver_out(*args, **kwargs):
     import random
     leave_threshold  = 0.25
     back_threshold = 0.5
-    unserved_threshold = 0.05
+    unserved_threshold = 0.005
     anneal = 0.2
 
     veh = kwargs.get('veh', None)
@@ -208,6 +208,7 @@ def f_driver_out(*args, **kwargs):
         unserved_demand_yesterday = sim.res[last_run].pax_exp[sim.res[last_run].pax_exp.LOSES_PATIENCE>0].shape[0]/ \
                                     sim.res[last_run].pax_exp.shape[0]
         if sim.res[last_run].veh_exp.loc[veh.id].ENDS_SHIFT == 0:
+            print(unserved_demand_yesterday)
             if avg_yesterday < prev_rides:
                 msg = 'veh {} stays out'.format(veh.id)
                 flag = True
@@ -238,10 +239,26 @@ def f_driver_out(*args, **kwargs):
 
 def f_repos(*args, **kwargs):
     # handles the vehiciles when they become IDLE (after comppleting the request or entering the system)
+    import random
+    repos = DotMap()
+    if random.random()>0.9:  #10% of cases driver will repos
+        driver = kwargs.get('veh',None)
+        sim = driver.sim
+        repos.pos = random.choice(list(sim.inData.G.neighbors(sim.inData.nodes.sample(1).squeeze().name)))
+        repos.time = driver.sim.skims.ride[driver.veh.pos][repos.pos]
+        repos.flag = True
+    else:
+        repos.flag = False
+
+    return repos
+
+
+def f_dummy_repos(*args, **kwargs):
+    # handles the vehiciles when they become IDLE (after comppleting the request or entering the system)
     repos = DotMap()
     repos.flag = False
-    repos.pos = None
-    repos.time = 0
+    #repos.pos = None
+    #repos.time = 0
     return repos
 
 

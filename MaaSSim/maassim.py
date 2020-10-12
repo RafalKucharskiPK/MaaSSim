@@ -16,7 +16,7 @@ import zipfile
 from pathlib import Path
 
 from MaaSSim.traveller import PassengerAgent, travellerEvent
-from MaaSSim.driver import VehicleAgent, f_repos
+from MaaSSim.driver import VehicleAgent, f_dummy_repos
 from MaaSSim.platform import f_match, PlatformAgent
 from MaaSSim.performance import kpi_pax, kpi_veh
 from MaaSSim.utils import initialize_df, dummy_False
@@ -54,7 +54,7 @@ class Simulator:
                 'f_driver_out': dummy_False,
                 'f_trav_mode': dummy_False,
                 'f_driver_decline': dummy_False,
-                'f_driver_repos': f_repos,
+                'f_driver_repos': f_dummy_repos,
                 'f_stop_crit': dummy_False,
                 'f_timeout': None,
                 'kpi_pax': kpi_pax,
