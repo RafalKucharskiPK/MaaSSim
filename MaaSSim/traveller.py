@@ -137,10 +137,10 @@ class PassengerAgent(object):
 
                 # print(self.offers)
                 if len(self.offers) > 1:
-                    did_i_opt_out = self.f_platform_choice(traveller=self, sim=self.sim)
+                    did_i_opt_out = self.f_platform_choice(traveller=self)
                 elif len(self.offers) == 1:
                     platform_id, offer = list(self.offers.items())[0]
-                    if self.f_mode():
+                    if self.f_mode(traveller = self):
                         self.sim.plats[platform_id].handle_rejected(offer['pax_id'])
                         did_i_opt_out = True
                     else:
@@ -228,15 +228,15 @@ def f_mode(*args, **kwargs):
     trip = kwargs.get('trip')
 
     pass_walk_time = trip.pass_walk_time
-    veh_pickup_time = trip.sim.skims.ride[trip.veh.pos][trip.request.origin]
+    veh_pickup_time = trip.sim.skims.ride.T[trip.veh.pos][trip.request.origin]
     pass_matching_time = trip.sim.env.now - trip.t_matching
     tt = trip.request.ttrav
     return (max(pass_walk_time, veh_pickup_time) + pass_matching_time) / tt.seconds > delta
 
 
 def f_platform_choice(*args, **kwargs):
-    sim = kwargs.get('sim')
     traveller = kwargs.get('traveller')
+    sim = traveller.sim
 
     betas = sim.params.platform_choice
     offers = traveller.offers

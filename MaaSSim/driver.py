@@ -54,7 +54,6 @@ class VehicleAgent(object):
         # output reports
         self.myrides = list()  # report of this vehicle process, populated while simulating
         # functions
-        self.f_driver_learn = self.sim.functions.f_driver_learn  # exit from the system due to prev exp
         self.f_driver_out = self.sim.functions.f_driver_out  # exit from the system due to prev exp
         self.f_driver_decline = self.sim.functions.f_driver_decline  # reject the incoming request
         self.f_driver_repos = self.sim.functions.f_driver_repos  # reposition after you are free again
@@ -167,12 +166,6 @@ class VehicleAgent(object):
                 if self.till_end() <= 1:  # quit shift
                     self.exit_flag = True
 
-            # except simpy.Interrupt as e:
-            #     # whenever process is interrupted and vehicle needs to start again
-            #     self.update(event=driverEvent.IS_REJECTED_BY_TRAVELLER)
-            #     self.clear_me()
-            #     self.f_repos(sim=self.sim, veh=self.veh)
-
             if self.exit_flag:
                 # handles end of the sim
                 self.update(event=driverEvent.ENDS_SHIFT)
@@ -244,8 +237,12 @@ def f_repos(*args, **kwargs):
     if random.random()>0.9:  #10% of cases driver will repos
         driver = kwargs.get('veh',None)
         sim = driver.sim
-        repos.pos = random.choice(list(sim.inData.G.neighbors(sim.inData.nodes.sample(1).squeeze().name)))
-        repos.time = driver.sim.skims.ride[driver.veh.pos][repos.pos]
+        if len(list(sim.inData.G.neighbors(sim.inData.nodes.sample(1).squeeze().name)))==0:
+            repos.pos = sim.G.nodes.sample(1).squeeze().name
+            repos.time = 60
+        else:
+            repos.pos = random.choice(list(sim.inData.G.neighbors(sim.inData.nodes.sample(1).squeeze().name)))
+            repos.time = driver.sim.skims.ride[driver.veh.pos][repos.pos]
         repos.flag = True
     else:
         repos.flag = False

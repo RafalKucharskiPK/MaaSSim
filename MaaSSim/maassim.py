@@ -8,6 +8,7 @@
 from dotmap import DotMap
 import pandas as pd
 import math
+import networkx as nx
 import simpy
 import time
 import numpy as np
@@ -218,6 +219,12 @@ class Simulator:
                 for pos in common_pos:
                     assert len(set(ride[ride.pos == pos].t.to_list() + trip[
                         trip.pos == pos].t.to_list())) > 0  # were they at the same time at the same place?
+                if not self.vars.ride:
+                    # check travel times
+                    length = int(nx.shortest_path_length(self.inData.G, o, d, weight='length') / self.params.speeds.ride)
+                    skim = self.skims.ride[o][d]
+                    assert abs(skim - length) < 3
+
             else:
                 # unsuccesful trip
                 flag = False
@@ -265,8 +272,8 @@ class Simulator:
         # uses distance skim in meters to populate 3 skims used in simulations
         self.skims = DotMap()
         self.skims.dist = self.inData.skim.copy()
-        self.skims.ride = self.skims.dist.divide(self.params.speeds.ride).astype(int)  # <---- here we have travel time
-        self.skims.walk = self.skims.dist.divide(self.params.speeds.walk).astype(int)  # <---- here we have travel time
+        self.skims.ride = self.skims.dist.divide(self.params.speeds.ride).astype(int).T  # <---- here we have travel time
+        self.skims.walk = self.skims.dist.divide(self.params.speeds.walk).astype(int).T  # <---- here we have travel time
 
     def timeout(self, n, variability=False):
         # overwrites sim timeout to add potential stochasticity

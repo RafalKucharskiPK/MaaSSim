@@ -129,7 +129,7 @@ def f_match(**kwargs):
     while min(len(reqQ), len(vehQ)) > 0:  # loop until one of queues is empty (i.e. all requests handled)
         requests = sim.inData.requests.loc[reqQ]  # queued schedules of requests
         vehicles = sim.vehicles.loc[vehQ]  # vehicle agents
-        skimQ = sim.skims.ride[vehicles.pos].loc[requests.origin].copy().stack()  # travel times between
+        skimQ = sim.skims.ride.T[vehicles.pos].loc[requests.origin].copy().stack()  # travel times between
         # requests and vehicles in the column vector form
         
         skimQ = skimQ.drop(platform.tabu, errors='ignore')  # drop already rejected matches
@@ -179,7 +179,7 @@ def f_match(**kwargs):
                 platform.offers[offer_id] = offer  # bookkeeping of offers made by platform
                 sim.pax[i].offers[platform.platform.name] = offer  # offer transferred to
 
-            if veh.f_driver_decline(sim=sim):  # allow driver reject the request
+            if veh.f_driver_decline(veh=veh):  # allow driver reject the request
                 veh.update(event=driverEvent.REJECTS_REQUEST)
                 platform.offers[offer_id]['status'] = -2
                 for i in simpaxes:
