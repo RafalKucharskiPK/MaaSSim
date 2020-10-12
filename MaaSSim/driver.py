@@ -238,7 +238,7 @@ def f_repos(*args, **kwargs):
         driver = kwargs.get('veh',None)
         sim = driver.sim
         if len(list(sim.inData.G.neighbors(sim.inData.nodes.sample(1).squeeze().name)))==0:
-            repos.pos = sim.G.nodes.sample(1).squeeze().name
+            repos.pos = sim.inData.G.nodes.sample(1).squeeze().name
             repos.time = 60
         else:
             repos.pos = random.choice(list(sim.inData.G.neighbors(sim.inData.nodes.sample(1).squeeze().name)))

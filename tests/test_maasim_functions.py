@@ -22,17 +22,16 @@ class TestEarly(unittest.TestCase):
         this_inData_early = prep_supply_and_demand(this_inData_early, params)  # generate supply and demand
         this_inData_early.vehicles.shift_end = [100]  # vehicle ends early
 
-        self.sim = simulator_early(params=params, inData=this_inData_early, event_based=False)
+        sim = simulator_early(params=params, inData=this_inData_early, event_based=False)
 
-        self.assertIn(travellerEvent.LOSES_PATIENCE.name, self.sim.runs[0].trips.event.values)  # one traveller lost patience
+        self.assertIn(travellerEvent.LOSES_PATIENCE.name, sim.runs[0].trips.event.values)  # one traveller lost patience
 
-        r = self.sim.runs[0].rides
-        self.assertLess(r[r.event == driverEvent.ENDS_SHIFT.name].t.squeeze(), self.sim.t1)  # did he really end earlier
+        r = sim.runs[0].rides
+        self.assertLess(r[r.event == driverEvent.ENDS_SHIFT.name].t.squeeze(), sim.t1)  # did he really end earlier
 
 
-    def tearDown(self):
-        self.sim = None
-        self.params = None
+        del sim
+        del params
 
 
 

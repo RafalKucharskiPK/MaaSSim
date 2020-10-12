@@ -26,24 +26,24 @@ class TestSimulationResults(unittest.TestCase):
 
         CONFIG_PATH = os.path.join(os.path.dirname(__file__), 'config_results_test.json')
         # tests if results are as expected
-        self.sim = this_simulator(config=CONFIG_PATH, root_path=os.path.dirname(__file__))  # run simulations
+        sim = this_simulator(config=CONFIG_PATH, root_path=os.path.dirname(__file__))  # run simulations
 
-        self.assertIn('trips', self.sim.runs[0].keys())  # do we have the results
+        self.assertIn('trips', sim.runs[0].keys())  # do we have the results
 
-        self.assertLess(self.sim.sim_end - self.sim.sim_start, 20)  # does the calculation take a lot of time?
+        self.assertLess(sim.sim_end - sim.sim_start, 20)  # does the calculation take a lot of time?
 
-        self.assertGreater(self.sim.runs[0].trips.pos.nunique(), self.sim.params.nP)  # do we travel around the city
+        self.assertGreater(sim.runs[0].trips.pos.nunique(), sim.params.nP)  # do we travel around the city
 
-        self.assertGreater(self.sim.runs[0].trips.t.max(),
-                           0.5 * self.sim.params.simTime * 60 * 60)  # do we span at least half of simulation time?)
+        self.assertGreater(sim.runs[0].trips.t.max(),
+                           0.5 * sim.params.simTime * 60 * 60)  # do we span at least half of simulation time?)
 
-        paxes = self.sim.runs[0].rides.paxes.apply(lambda x: tuple(x))
-        self.assertGreater(paxes.nunique(), self.sim.params.nP / 2)  # at least half of travellers got the ride
+        paxes = sim.runs[0].rides.paxes.apply(lambda x: tuple(x))
+        self.assertGreater(paxes.nunique(), sim.params.nP / 2)  # at least half of travellers got the ride
 
-        self.assertGreater(self.sim.res[0].veh_exp["ARRIVES_AT_PICKUP"].max(), 0)  # is there any vehicle RIDING?
+        self.assertGreater(sim.res[0].veh_exp["ARRIVES_AT_PICKUP"].max(), 0)  # is there any vehicle RIDING?
 
-        self.assertIn('pax_exp', self.sim.res[0].keys())
-        del self.sim
+        self.assertIn('pax_exp', sim.res[0].keys())
+        del sim
 
     def test_consistency(self):
         """
@@ -51,14 +51,14 @@ class TestSimulationResults(unittest.TestCase):
         """
         from MaaSSim.simulators import simulate as this_simulator
         CONFIG_PATH = os.path.join(os.path.dirname(__file__), 'config_consistency_test.json')
-        self.sim = this_simulator(config=CONFIG_PATH, root_path=os.path.dirname(__file__))  # run simulations
+        sim = this_simulator(config=CONFIG_PATH, root_path=os.path.dirname(__file__))  # run simulations
 
         from MaaSSim.traveller import travellerEvent
 
-        rides = self.sim.runs[0].rides  # vehicles results
-        trips = self.sim.runs[0].trips  # travellers result
-        for i in self.sim.inData.passengers.sample(min(5, self.sim.inData.passengers.shape[0])).index.to_list():
-            r = self.sim.inData.requests[self.sim.inData.requests.pax_id == i].iloc[0].squeeze()  # that is his request
+        rides = sim.runs[0].rides  # vehicles results
+        trips = sim.runs[0].trips  # travellers result
+        for i in sim.inData.passengers.sample(min(5, sim.inData.passengers.shape[0])).index.to_list():
+            r = sim.inData.requests[sim.inData.requests.pax_id == i].iloc[0].squeeze()  # that is his request
             o, d = r['origin'], r['destination']  # his origin and destination
             trip = trips[trips.pax == i]  # his trip
             self.assertIn(o, trip.pos.values)  # was he at origin
@@ -75,11 +75,11 @@ class TestSimulationResults(unittest.TestCase):
                 for pos in common_pos:
                     self.assertGreater(len(set(ride[ride.pos == pos].t.to_list() + trip[
                         trip.pos == pos].t.to_list())), 0)  # were they at the same time at the same place?
-                if not self.sim.vars.ride:
+                if not sim.vars.ride:
                     # check travel times
-                    length = int(nx.shortest_path_length(self.sim.inData.G, o, d, weight='length') /
-                                 self.sim.params.speeds.ride)
-                    skim = self.sim.skims.ride[o][d]
+                    length = int(nx.shortest_path_length(sim.inData.G, o, d, weight='length') /
+                                 sim.params.speeds.ride)
+                    skim = sim.skims.ride[o][d]
                     assert abs(skim - length) < 3
             else:
                 # unsuccessful trip
@@ -96,7 +96,7 @@ class TestSimulationResults(unittest.TestCase):
                     print(trip.event.values.unique())
                     self.assertTrue(flag)
 
-        del self.sim
+        del sim
 
     def test_prep(self):
         """
