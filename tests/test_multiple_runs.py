@@ -15,7 +15,7 @@ class TestMultipleRuns(unittest.TestCase):
 
         def rand_reject8(**kwargs):
             # sample function to reject with probability of 80%
-            return random.random() >= 0.2
+            return random.random() >= 0.5
 
         params = get_config(CONFIG_PATH, root_path=os.path.dirname(__file__))  # load from .json file
 

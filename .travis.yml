@@ -23,8 +23,8 @@ install:
  - pip install coveralls
  - pip install nbval
 script:
- - python -m unittest tests/
- - coverage run -m unittest tests/
+ - python -m unittest discover tests
+ - coverage run -m unittest discover tests
  - py.test --nbval-lax docs/tutorials
 
 after_success:

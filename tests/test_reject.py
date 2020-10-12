@@ -27,58 +27,58 @@ class TestRejects(unittest.TestCase):
 
         # A no rejections
 
-        sim2 = reject_simulator(params=params, inData=this_inData.copy(),
+        sim = reject_simulator(params=params, inData=this_inData.copy(),
                               f_trav_mode=dummy_False,
                               f_driver_decline=dummy_False)
         self.assertNotIn(travellerEvent.IS_REJECTED_BY_VEHICLE.name,
-                         sim2.runs[0].trips.event.values)  # no rejections
+                         sim.runs[0].trips.event.values)  # no rejections
         self.assertNotIn(travellerEvent.REJECTS_OFFER.name,
-                         sim2.runs[0].trips.event.values)  # no rejections
+                         sim.runs[0].trips.event.values)  # no rejections
 
         self.assertNotIn(driverEvent.REJECTS_REQUEST.name,
-                         sim2.runs[0].rides.event.values)  # no rejections
+                         sim.runs[0].rides.event.values)  # no rejections
         self.assertNotIn(driverEvent.IS_REJECTED_BY_TRAVELLER.name,
-                         sim2.runs[0].rides.event.values)  # no rejections
+                         sim.runs[0].rides.event.values)  # no rejections
 
         # B vehicle rejects
-        sim2.make_and_run(f_trav_mode=dummy_False,
+        sim.make_and_run(f_trav_mode=dummy_False,
                           f_driver_decline=rand_reject8,
                           f_platform_choice=dummy_False)
         self.assertIn(travellerEvent.IS_REJECTED_BY_VEHICLE.name,
-                      sim2.runs[1].trips.event.values)  # no rejections
+                      sim.runs[1].trips.event.values)  # no rejections
         self.assertNotIn(travellerEvent.REJECTS_OFFER.name,
-                         sim2.runs[1].trips.event.values)  # no rejections
+                         sim.runs[1].trips.event.values)  # no rejections
 
         self.assertIn(driverEvent.REJECTS_REQUEST.name,
-                      sim2.runs[1].rides.event.values)  # no rejections
+                      sim.runs[1].rides.event.values)  # no rejections
         self.assertNotIn(driverEvent.IS_REJECTED_BY_TRAVELLER.name,
-                         sim2.runs[1].rides.event.values)  # no rejections
+                         sim.runs[1].rides.event.values)  # no rejections
 
         # # C traveller rejects
-        sim2.make_and_run(f_trav_mode=rand_reject8,
+        sim.make_and_run(f_trav_mode=rand_reject8,
                           f_driver_decline=dummy_False,
                           f_platform_choice=dummy_False)
         self.assertNotIn(travellerEvent.IS_REJECTED_BY_VEHICLE.name,
-                         sim2.runs[2].trips.event.values)  # no rejections
+                         sim.runs[2].trips.event.values)  # no rejections
         self.assertIn(travellerEvent.REJECTS_OFFER.name,
-                      sim2.runs[2].trips.event.values)  # no rejections
+                      sim.runs[2].trips.event.values)  # no rejections
 
         self.assertNotIn(driverEvent.REJECTS_REQUEST.name,
-                         sim2.runs[2].rides.event.values)  # no rejections
+                         sim.runs[2].rides.event.values)  # no rejections
         self.assertIn(driverEvent.IS_REJECTED_BY_TRAVELLER.name,
-                      sim2.runs[2].rides.event.values)  # no rejections
+                      sim.runs[2].rides.event.values)  # no rejections
         #
         # # D both reject
-        sim2.make_and_run(f_trav_mode=rand_reject8,
+        sim.make_and_run(f_trav_mode=rand_reject8,
                           f_driver_decline=rand_reject8,
                           f_platform_choice=dummy_False)
         self.assertIn(travellerEvent.IS_REJECTED_BY_VEHICLE.name,
-                      sim2.runs[3].trips.event.values)  # no rejections
+                      sim.runs[3].trips.event.values)  # no rejections
         self.assertIn(travellerEvent.REJECTS_OFFER.name,
-                      sim2.runs[3].trips.event.values)  # no rejections
+                      sim.runs[3].trips.event.values)  # no rejections
 
         self.assertIn(driverEvent.REJECTS_REQUEST.name,
-                      sim2.runs[3].rides.event.values)  # no rejections
+                      sim.runs[3].rides.event.values)  # no rejections
         self.assertIn(driverEvent.IS_REJECTED_BY_TRAVELLER.name,
-                      sim2.runs[3].rides.event.values)  # no rejections
-        del sim2
+                      sim.runs[3].rides.event.values)  # no rejections
+        del sim

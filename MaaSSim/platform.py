@@ -129,7 +129,7 @@ def f_match(**kwargs):
     while min(len(reqQ), len(vehQ)) > 0:  # loop until one of queues is empty (i.e. all requests handled)
         requests = sim.inData.requests.loc[reqQ]  # queued schedules of requests
         vehicles = sim.vehicles.loc[vehQ]  # vehicle agents
-        skimQ = sim.skims.ride.T[vehicles.pos].loc[requests.origin].copy().stack()  # travel times between
+        skimQ = sim.skims.ride[requests.origin].loc[vehicles.pos].copy().stack()  # travel times between
         # requests and vehicles in the column vector form
         
         skimQ = skimQ.drop(platform.tabu, errors='ignore')  # drop already rejected matches
