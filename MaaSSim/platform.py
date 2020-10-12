@@ -139,7 +139,7 @@ def f_match(**kwargs):
                             "Qs {}veh; {}req; tabu {}".format(len(vehQ), len(reqQ), len(platform.tabu)))
             break  # nobody likes each other - wait until new request or new vehicle
             
-        reqPos, vehPos = skimQ.idxmin()  # find the closest ones
+        vehPos, reqPos = skimQ.idxmin()  # find the closest ones
         
         mintime = skimQ.min()  # and the travel time
         vehicle = vehicles[vehicles.pos == vehPos].iloc[0]

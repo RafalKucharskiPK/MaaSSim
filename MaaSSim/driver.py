@@ -241,8 +241,8 @@ def f_repos(*args, **kwargs):
             repos.pos = sim.inData.G.nodes.sample(1).squeeze().name
             repos.time = 60
         else:
-            repos.pos = random.choice(list(sim.inData.G.neighbors(sim.inData.nodes.sample(1).squeeze().name)))
-            repos.time = driver.sim.skims.ride[driver.veh.pos][repos.pos]
+            repos.pos = int(random.choice(list(sim.inData.G.neighbors(sim.inData.nodes.sample(1).squeeze().name))))
+            repos.time = driver.sim.skims.ride[repos.pos][driver.veh.pos]
         repos.flag = True
     else:
         repos.flag = False
