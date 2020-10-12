@@ -193,8 +193,8 @@ def f_driver_out(*args, **kwargs):
     if len(sim.runs)==0:
         msg = 'veh {} runs on'.format(veh.id)
     else:
-        last_run =sim.run_ids[-1]
-        quant_yesterday =  sim.res[last_run].veh_exp.nRIDES.quantile(leave_threshold)
+        last_run = sim.run_ids[-1]
+        quant_yesterday = sim.res[last_run].veh_exp.nRIDES.quantile(leave_threshold)
         avg_yesterday = sim.res[last_run].veh_exp.nRIDES.quantile(back_threshold)
         prev_rides = pd.Series([sim.res[_].veh_exp.loc[veh.id].nRIDES for _ in sim.run_ids]).mean()
         rides_yesterday = sim.res[last_run].veh_exp.loc[veh.id].nRIDES

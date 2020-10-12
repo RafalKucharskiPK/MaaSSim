@@ -23,8 +23,8 @@ install:
  - pip install coveralls
  - pip install nbval
 script:
- - python -m unittest tests/test_maassim.py
- - coverage run -m unittest tests/test_maassim.py
+ - python -m unittest tests
+ - coverage run -m unittest tests
  - py.test --nbval-lax docs/tutorials
 
 after_success:

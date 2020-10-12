@@ -90,7 +90,12 @@ class TestSimulationResults(unittest.TestCase):
                     flag = True
                 elif travellerEvent.REJECTS_OFFER.name in trip.event.values:
                     flag = True
-                self.assertTrue(flag)
+                try:
+                    self.assertTrue(flag)
+                except AssertionError:
+                    print(trip.event.values.unique())
+                    self.assertTrue(flag)
+
         del self.sim
 
     def test_prep(self):
