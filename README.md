@@ -7,7 +7,45 @@
 [![Build Status](https://travis-ci.org/RafalKucharskiPK/MaaSSim.svg?branch=master)](https://travis-ci.org/RafalKucharskiPK/MaaSSim)
 [![Coverage Status](https://coveralls.io/repos/github/RafalKucharskiPK/MaaSSim/badge.svg?branch=master)](https://coveralls.io/github/RafalKucharskiPK/MaaSSim?branch=master)
 
+# MaaSSim
 
+MaaSSim is an agent-based simulator, aiming to reproduce the transport system dynamics used by two kind of agents: (i) travellers, requesting to travel from their origin to destination at a given time, and (ii) drivers supplying their travel needs by offering them rides. The intermediate agent, the platform, allows demand to be matched with supply. Both supply and demand are microscopic. For supply this pertains to explicit representation of single vehicles and their movements in time and space (detailed road network graph), while for demand this pertains to exact trip request time and destinations defined at the graph node level.
+Agents are decision makers, specifically, travellers may decide which mode they use (potentially quitting using simulated MaaS modes) or reject the incoming offer. Similarly, driver may opt-out from the system (stop providing service) or reject/accept incoming requests, moreover he may strategically reposition while being idle. All of above behaviours are modelled through user-defined modules, by default deterministic, optionally probabilistic, representing agents' taste variations (heterogeneity), their previous experiences (learning) and available information (system control). Similarly, the system performance (amongst others travel times and service times) may be deterministic or probabilistic, leading to different results' interpretations.
+The simulation run results in two sets of records, one being sequence of space-time locations and statuses for simulated vehicles and the other for travellers. Further synthesized into agent-level and system-wide KPIs for further analyses.
+
+
+
+
+# MaaSSim at glance
+
+usage and overview
+```python
+params = MaaSSim.utils.get_config('default.json')  # load default config
+sim = MaaSSim.maassim.simulate(params = params)  # run the simulation
+sim.runs[0].trips  # access the results
+params.city = "Wieliczka, Poland" # change the city
+inData = MaaSSim.utils.download_G(MaaSSim.data_structures.structures, params)  # download the graph for new city
+sim_1 = MaaSSim.maassim.simulate(params = params, inData = inData) # run the simulation
+params.nP = 50 # change number of travellers
+sim_2 = MaaSSim.maassim.simulate(params = params, inData = inData) # run the second simulation
+print(sim1.res[0].pax_kpi,sim2.res[0].pax_kpi)  # compare the results
+space = DotMap()
+space.nP = [50,100,200] # define the search space to explore in experiments
+MaaSSim.maassim.simulate_parallel(params = params, search_space = space) # run parallel experiments
+res = collect_results(params.paths.dumps) # collect results from  parallel experiments
+
+def my_function(**kwargs): # user defined function to represent agent behaviour
+    veh = kwargs.get('veh', None)  # input from simulation
+    sim = veh.sim  # access to simulation object
+    if len(sim.runs) > 0:
+        if sim.res[last_run].veh_exp.loc[veh.id].nRIDES > 3:
+            return False # if I had more than 3 rides yesterday I stay
+        else:
+            return True # otherwise I leave
+    else:
+        return True # I do not leave on first day
+sim = simulate(params = params, f_driver_out = f_my_driver_out) # simulate with my user defined function```
+```
 
 >  # General MaaSSim description
 > Set of passengers demand to travel between their origins and destinations at desired departure/arrival times. 
@@ -39,43 +77,6 @@
 >
 > Drivers, companies and platforms optimize by maximizing their profit, i.e. selecting the optimal strategy on prices, services, fleet, repositioning, marketing. 
 
-# MaaSSim at glance
-
-usage and overview
-```python
-params = MaaSSim.utils.get_config('default.json') # load default config
-params.city = 'Wieliczka, Poland' # modify configuration
-inData = MaaSSim.utils.download_G(MaaSSim.data_structures.structures, params)  # download the graph for new city
-sim_1 = MaaSSim.maassim.simulate(params = params, inData = inData) # run the simulation
-params.nP = 50 # change number of travellers
-sim_2 = MaaSSim.maassim.simulate(params = params, inData = inData) # run the second simulation
-print(sim1.res[0].pax_kpi,sim2.res[0].pax_kpi)  # compare the results
-space = DotMap()
-space.nP = [50,100,200] # define the search space to explore in experiments
-MaaSSim.maassim.simulate_parallel(params = params, search_space = space) # run parallel experiments
-res = collect_results(params.paths.dumps) # collect results from  parallel experiments
-
-def my_function(**kwargs): # user defined function to represent agent behaviour
-    veh = kwargs.get('veh', None)  # input from simulation
-    sim = veh.sim  # access to simulation object
-    if len(sim.runs) > 0:
-        if sim.res[last_run].veh_exp.loc[veh.id].nRIDES > 3:
-            return False # if I had more than 3 rides yesterday I stay
-        else:
-            return True # otherwise I leave
-    else:
-        return True # I do not leave on first day
-sim = simulate(params = params, f_driver_out = f_my_driver_out) # simulate with my user defined function
-```
-
-
-# MaaSSim
-
-MaaSSim is an agent-based simulator, aiming to reproduce the transport system dynamics used by two kind of agents: (i) travellers, requesting to travel from their origin to destination at a given time, and (ii) drivers supplying their travel needs by offering them rides. The intermediate agent, the platform, allows demand to be matched with supply. Both supply and demand are microscopic. For supply this pertains to explicit representation of single vehicles and their movements in time and space (detailed road network graph), while for demand this pertains to exact trip request time and destinations defined at the graph node level.
-Agents are decision makers, specifically, travellers may decide which mode they use (potentially quitting using simulated MaaS modes) or reject the incoming offer. Similarly, driver may opt-out from the system (stop providing service) or reject/accept incoming requests, moreover he may strategically reposition while being idle. All of above behaviours are modelled through user-defined modules, by default deterministic, optionally probabilistic, representing agents' taste variations (heterogeneity), their previous experiences (learning) and available information (system control). Similarly, the system performance (amongst others travel times and service times) may be deterministic or probabilistic, leading to different results' interpretations.
-The simulation run results in two sets of records, one being sequence of space-time locations and statuses for simulated vehicles and the other for travellers. Further synthesized into agent-level and system-wide KPIs for further analyses.
-
-
 
 # Installation (recommended):
 
@@ -104,7 +105,7 @@ The simulation run results in two sets of records, one being sequence of space-t
    accesible from anaconda navigator
 
 #### networkX
-   graph package capable of efficient graph operations, i.e. path searches (https://networkx.github.io/documentation/networkx-1.10/reference/introduction.html)
+ graph package capable of efficient graph operations, i.e. path searches (https://networkx.github.io/documentation/networkx-1.10/reference/introduction.html)
 
 #### osmNX
    allows to donwload network (road, walk, bike, ...) from OSM via into _networkX_ python format. 
