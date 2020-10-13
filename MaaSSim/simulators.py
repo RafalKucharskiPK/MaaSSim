@@ -66,7 +66,7 @@ def simulate_parallel(config="../data/config/parallel.json", inData=None, params
         inData.passengers.platforms = inData.passengers.apply(lambda x: [0], axis=1)
 
 
-    inData = prep_shared_rides(inData, params.shareability, sblt = None)  # obligatory to prepare schedules
+    inData = prep_shared_rides(inData, params.shareability)  # obligatory to prepare schedules
 
 
     brute(func=single_pararun,
