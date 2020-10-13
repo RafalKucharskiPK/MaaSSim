@@ -328,7 +328,7 @@ def collect_results(path):
             first = False
         for file in zf.namelist():
             df = pd.read_csv(zf.open(file))
-            for key in path.stem.split('-')[1:]:
+            for key in archive.stem.split('-')[1:]:
                 field, value = key.split('_')
                 df[field] = value
 
