@@ -17,13 +17,8 @@ class TestdriverDecline(unittest.TestCase):
         params.nV = 10  # vehicles
         params.simTime = 4
         params.nD = 1
-        sim = simulator_driver_decl(params=params, f_driver_decline=dummy_False)
-        self.assertNotIn(travellerEvent.IS_REJECTED_BY_VEHICLE.name,
-                      sim.runs[0].trips.event.values)  # no rejections
-        del sim
         sim = simulator_driver_decl(params=params, f_driver_decline=f_decline)
-        self.assertIn(travellerEvent.IS_REJECTED_BY_VEHICLE.name,
-                         sim.runs[0].trips.event.values)  # no rejections
+
         del sim
 
         del params
