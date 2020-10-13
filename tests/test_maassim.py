@@ -164,6 +164,5 @@ class TestSimulationResults(unittest.TestCase):
 
     def tearDown(self):
         zips = glob.glob('*.{}'.format('zip'))
-        for zip in zips:
-            os.remove(zip)
-
+        for _zip in zips:
+            os.remove(_zip)
