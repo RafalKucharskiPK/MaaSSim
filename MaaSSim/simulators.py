@@ -8,8 +8,7 @@
 from MaaSSim.maassim import Simulator
 from MaaSSim.shared import prep_shared_rides
 from MaaSSim.utils import get_config, load_G, generate_demand, generate_vehicles, initialize_df, empty_series, \
-    slice_space, test_space, dummy_False, read_requests_csv, read_vehicle_positions
-import numpy as np
+    slice_space, read_requests_csv, read_vehicle_positions
 import pandas as pd
 from scipy.optimize import brute
 import logging
@@ -40,7 +39,7 @@ def single_pararun(one_slice, *args):
     _inData.vehicles = initialize_df(_inData.vehicles)
 
     sim = simulate(inData=_inData, params=_params, logger_level=logging.WARNING)
-    sim.dump(id=filename, path = _params.paths.get('dumps', None))  # store results
+    sim.dump(dump_id=filename, path = _params.paths.get('dumps', None))  # store results
 
     print(filename, pd.Timestamp.now(), 'end')
     return 0
@@ -62,6 +61,7 @@ def simulate_parallel(config="../data/config/parallel.json", inData=None, params
     if len(inData.platforms) == 0:  # only if no platforms in input
         inData.platforms = initialize_df(inData.platforms)
         inData.platforms.loc[0] = empty_series(inData.platforms)
+        inData.platforms.fare = [1]
         inData.vehicles.platform = 0
         inData.passengers.platforms = inData.passengers.apply(lambda x: [0], axis=1)
 
@@ -112,6 +112,7 @@ def simulate(config="../data/config/default.json", inData=None, params=None, **k
     if len(inData.platforms) == 0:  # only if no platforms in input
         inData.platforms = initialize_df(inData.platforms)
         inData.platforms.loc[0] = empty_series(inData.platforms)
+        inData.platforms.fare = [1]
 
     inData = prep_shared_rides(inData, params.shareability, sblt=None)  # prepare schedules
 
@@ -124,25 +125,6 @@ def simulate(config="../data/config/default.json", inData=None, params=None, **k
         if sim.functions.f_stop_crit(sim=sim):
             break
     return sim
-
-
-def f_stop_crit(*args, **kwargs):
-    sim = kwargs.get('sim', None)
-    convergence_threshold = -1
-    if len(sim.runs)<2:
-        sim.logger.warn('Early days')
-        return False
-    else:
-        # convergence on waiting times
-        convergence = abs((sim.res[sim.run_ids[-1]].pax_kpi['MEETS_DRIVER_AT_PICKUP']['mean']-
-                                sim.res[sim.run_ids[-2]].pax_kpi['MEETS_DRIVER_AT_PICKUP']['mean'])/
-                               sim.res[sim.run_ids[-2]].pax_kpi['MEETS_DRIVER_AT_PICKUP']['mean'])
-        if convergence < convergence_threshold:
-            sim.logger.warn('CONVERGED to {} after {} days'.format(convergence, sim.run_ids[-1]))
-            return True
-        else:
-            sim.logger.warn('NOT CONVERGED to {} after {} days'.format(convergence, sim.run_ids[-1]))
-            return False
 
 
 if __name__ == "__main__":

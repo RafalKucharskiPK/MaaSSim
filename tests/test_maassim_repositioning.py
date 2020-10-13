@@ -4,7 +4,8 @@ import os
 class TestDriverRepos(unittest.TestCase):
     def test_driver_repositioning(self):
         from MaaSSim.simulators import simulate as repos_simulator
-        from MaaSSim.driver import f_repos, driverEvent
+        from MaaSSim.driver import driverEvent
+        from MaaSSim.decisions import f_repos
         from MaaSSim.utils import get_config
 
 

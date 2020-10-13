@@ -5,8 +5,9 @@ import os
 class TestdriverOut(unittest.TestCase):
     def test_driver_out(self):
         from MaaSSim.simulators import simulate as simulator_driver_out
-        from MaaSSim.utils import dummy_False, get_config
-        from MaaSSim.driver import f_driver_out
+        from MaaSSim.utils import get_config
+        from MaaSSim.decisions import dummy_False
+        from MaaSSim.decisions import f_driver_out
 
         CONFIG_PATH = os.path.join(os.path.dirname(__file__), 'config_platform_choices.json')
         params = get_config(CONFIG_PATH, root_path=os.path.dirname(__file__))  # load from .json file

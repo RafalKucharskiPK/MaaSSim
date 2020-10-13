@@ -15,22 +15,9 @@ from osmnx.distance import get_nearest_node
 import osmnx as ox
 import networkx as nx
 import json
-from matplotlib.collections import LineCollection
 
 from .traveller import travellerEvent
 from .driver import driverEvent
-
-
-def dummy_False(*args, **kwargs):
-    # dummy function to always return False,
-    # used as default function inside of functionality
-    # (if the behaviour is not modelled)
-    return False
-
-
-def dummy_True(*args, **kwargs):
-    # dummy function to always return True
-    return True
 
 
 def rand_node(df):

@@ -1,9 +1,6 @@
 from enum import Enum
 import time
-from dotmap import DotMap
 from .driver import driverEvent
-from math import exp
-from numpy.random import choice
 
 
 class travellerEvent(Enum):
@@ -196,91 +193,6 @@ class PassengerAgent(object):
         self.sim.logger.info(self.msg)
         # self.update(event = travellerEvent.EXIT)
 
-# ######### #
-# FUNCTIONS #
-# ######### #
-
-def f_platform_opt_out(*args, **kwargs):
-    pax = kwargs.get('pax', None)
-    return pax.request.platform == -1
 
 
-def f_out(*args, **kwargs):
-    # it uses pax_exp of a passenger populated in previous run
-    # prev_exp is a pd.Series of this pd.DataFrame
-    # pd.DataFrame(columns=['wait_pickup','wait_match','tt'])
-    # returns boolean True if passanger decides to opt out
-    prev_exp = kwargs.get('prev_exp', None)
-    if prev_exp is None:
-        # no prev exepreince
-        return False
-    else:
-        if prev_exp.iloc[0].outcome == 1:
-            return False
-        else:
-            return True
 
-
-def f_mode(*args, **kwargs):
-    # returns boolean True if passenger decides not to use MaaS (bad offer)
-    offer = kwargs.get('offer', None)
-    delta = 0.5
-    trip = kwargs.get('trip')
-
-    pass_walk_time = trip.pass_walk_time
-    veh_pickup_time = trip.sim.skims.ride.T[trip.veh.pos][trip.request.origin]
-    pass_matching_time = trip.sim.env.now - trip.t_matching
-    tt = trip.request.ttrav
-    return (max(pass_walk_time, veh_pickup_time) + pass_matching_time) / tt.seconds > delta
-
-
-def f_platform_choice(*args, **kwargs):
-    traveller = kwargs.get('traveller')
-    sim = traveller.sim
-
-    betas = sim.params.platform_choice
-    offers = traveller.offers
-
-    # calc utilities
-    exps = list()
-
-    add_opt_out = True
-
-    for platform, offer in offers.items():
-        if add_opt_out:
-            u = offer['wait_time'] * 2 * betas.Beta_wait + \
-                offer['travel_time'] * 2 * betas.Beta_time + \
-                offer['fare'] / 2 * betas.Beta_cost
-            exps.append(exp(u))
-            add_opt_out = False
-
-        u = offer['wait_time'] * betas.Beta_wait + \
-            offer['travel_time'] * betas.Beta_time + \
-            offer['fare'] * betas.Beta_cost
-        exps.append(exp(u))
-
-    p = [_ / sum(exps) for _ in exps]
-    platform_chosen = choice([-1] + list(offers.keys()), 1, p=p)[0]  # random choice with p
-
-    if platform_chosen == -1:
-        sim.logger.info("pax {:>4}  {:40} {}".format(traveller.id, 'chosen to opt out',
-                                                     sim.print_now()))
-    else:
-        sim.logger.info("pax {:>4}  {:40} {}".format(traveller.id, 'chosen platform ' + str(platform_chosen),
-                                                     sim.print_now()))
-        sim.logger.info("pax {:>4}  {:40} {}".format(traveller.id, 'platform probs: ' + str(p),
-                                                     sim.print_now()))
-
-    # handle requests
-    for platform_id, offer in offers.items():
-        if int(platform_id) == platform_chosen:
-            sim.plats[platform_id].handle_accepted(offer['pax_id'])
-        else:
-            sim.plats[platform_id].handle_rejected(offer['pax_id'])
-        sim.logger.info("pax {:>4}  {:40} {}".format(traveller.id,
-                                                     "wait: {}, travel: {}, fare: {}".format(offer['wait_time'],
-                                                                                             int(offer['travel_time']),
-                                                                                             int(offer[
-                                                                                                     'fare'] * 100) / 100),
-                                                     sim.print_now()))
-    return platform_chosen == -1

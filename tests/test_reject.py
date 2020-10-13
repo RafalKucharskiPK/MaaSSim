@@ -5,7 +5,8 @@ import random
 class TestRejects(unittest.TestCase):
     def test_rejects(self):
         # make sure that rejection works for drivers and travellers (dummy reject with fixed probability)
-        from MaaSSim.utils import dummy_False, get_config
+        from MaaSSim.utils import get_config
+        from MaaSSim.decisions import dummy_False
         from MaaSSim.traveller import travellerEvent
         from MaaSSim.driver import driverEvent
         from MaaSSim.data_structures import structures as this_inData

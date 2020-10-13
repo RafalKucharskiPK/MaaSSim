@@ -5,7 +5,7 @@ class TestMultipleDays(unittest.TestCase):
     def test_multiple_days(self):
         # have two runs in the same instance and see if they are different
         from MaaSSim.data_structures import structures as my_inData
-        from MaaSSim.traveller import f_platform_choice
+        from MaaSSim.decisions import f_platform_choice
         from MaaSSim.simulators import simulate as multiple_days_simulator
         from MaaSSim.utils import get_config, generate_vehicles, generate_demand, initialize_df, load_G
 

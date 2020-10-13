@@ -5,9 +5,6 @@
 ################################################################################
 from enum import Enum
 import time
-from numpy import nan
-import pandas as pd
-from dotmap import DotMap
 
 
 class driverEvent(Enum):
@@ -174,99 +171,3 @@ class VehicleAgent(object):
                 break
 
 
-# ######### #
-# FUNCTIONS #
-# ######### #
-
-def f_driver_out(*args, **kwargs):
-    # it uses veh_exp of a vehicle populated in previous run
-    # returns boolean True if vehicle decides to opt out
-    import random
-    leave_threshold  = 0.25
-    back_threshold = 0.5
-    unserved_threshold = 0.005
-    anneal = 0.2
-
-    veh = kwargs.get('veh', None)
-    sim = veh.sim
-    flag = False
-    if len(sim.runs)==0:
-        msg = 'veh {} runs on'.format(veh.id)
-    else:
-        last_run = sim.run_ids[-1]
-        quant_yesterday = sim.res[last_run].veh_exp.nRIDES.quantile(leave_threshold)
-        avg_yesterday = sim.res[last_run].veh_exp.nRIDES.quantile(back_threshold)
-        prev_rides = pd.Series([sim.res[_].veh_exp.loc[veh.id].nRIDES for _ in sim.run_ids]).mean()
-        rides_yesterday = sim.res[last_run].veh_exp.loc[veh.id].nRIDES
-        unserved_demand_yesterday = sim.res[last_run].pax_exp[sim.res[last_run].pax_exp.LOSES_PATIENCE>0].shape[0]/ \
-                                    sim.res[last_run].pax_exp.shape[0]
-        if sim.res[last_run].veh_exp.loc[veh.id].ENDS_SHIFT == 0:
-            print(unserved_demand_yesterday)
-            if avg_yesterday < prev_rides:
-                msg = 'veh {} stays out'.format(veh.id)
-                flag = True
-            elif unserved_demand_yesterday>unserved_threshold:
-                if random.random()<anneal:
-                    print('wracamyyy!')
-                    msg = 'veh {} comes to serve unserved'.format(veh.id)
-                    flag = False
-                else:
-                    msg = 'veh {} someone else come to serve unserved'.format(veh.id)
-                    flag = False
-            else:
-                msg = 'veh {} comes back'.format(veh.id)
-                flag = False
-
-            pass
-        else:
-            if rides_yesterday > quant_yesterday:
-                msg = 'veh {} stays in'.format(veh.id)
-                flag = False
-            else:
-                msg = 'veh {} leaves'.format(veh.id)
-                flag = True
-
-    sim.logger.info('DRIVER OUT: '+msg)
-    return flag
-
-
-def f_repos(*args, **kwargs):
-    # handles the vehiciles when they become IDLE (after comppleting the request or entering the system)
-    import random
-    repos = DotMap()
-    if random.random()>0.9:  #10% of cases driver will repos
-        driver = kwargs.get('veh',None)
-        sim = driver.sim
-        if len(list(sim.inData.G.neighbors(sim.inData.nodes.sample(1).squeeze().name)))==0:
-            repos.pos = sim.inData.G.nodes.sample(1).squeeze().name
-            repos.time = 60
-        else:
-            repos.pos = int(random.choice(list(sim.inData.G.neighbors(sim.inData.nodes.sample(1).squeeze().name))))
-            repos.time = driver.sim.skims.ride[repos.pos][driver.veh.pos]
-        repos.flag = True
-    else:
-        repos.flag = False
-
-    return repos
-
-
-def f_dummy_repos(*args, **kwargs):
-    # handles the vehiciles when they become IDLE (after comppleting the request or entering the system)
-    repos = DotMap()
-    repos.flag = False
-    #repos.pos = None
-    #repos.time = 0
-    return repos
-
-
-def f_decline(*args, **kwargs):
-    # determines whether driver will pick up the request or not
-    # now it accepts requests only in the first quartile of travel times
-    pickup_time = kwargs.get('pickup_time', None)
-    request_nodes = kwargs.get('request_nodes', None)
-    pos = kwargs.get('pos', None)
-    skim = kwargs.get('skim', None)
-    quan = 0.5
-
-    limit = skim[pos].loc[request_nodes].quantile(quan)  # mean ditance to all the nodes
-    return pickup_time >= limit

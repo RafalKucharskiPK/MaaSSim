@@ -17,12 +17,26 @@ import zipfile
 from pathlib import Path
 
 from MaaSSim.traveller import PassengerAgent, travellerEvent
-from MaaSSim.driver import VehicleAgent, f_dummy_repos
-from MaaSSim.platform import f_match, PlatformAgent
+from MaaSSim.driver import VehicleAgent
+from MaaSSim.decisions import f_dummy_repos, f_match, dummy_False
+from MaaSSim.platform import PlatformAgent
 from MaaSSim.performance import kpi_pax, kpi_veh
-from MaaSSim.utils import initialize_df, dummy_False
+from MaaSSim.utils import initialize_df
 import sys
 import logging
+
+DEFAULTS = dict(f_match=f_match,
+                f_trav_out=dummy_False,
+                f_driver_learn=dummy_False,
+                f_driver_out=dummy_False,
+                f_trav_mode=dummy_False,
+                f_driver_decline=dummy_False,
+                f_driver_repos=f_dummy_repos,
+                f_stop_crit=dummy_False,
+                f_timeout=None,
+                kpi_pax=kpi_pax,
+                kpi_veh=kpi_veh,
+                monitor=True)
 
 
 class Simulator:
@@ -47,26 +61,13 @@ class Simulator:
               'kpi_pax',
               'kpi_veh']
 
-    DEFAULTS = {'print': False,
-                'params': None,
-                'f_match': f_match,
-                'f_trav_out': dummy_False,
-                'f_driver_learn': dummy_False,
-                'f_driver_out': dummy_False,
-                'f_trav_mode': dummy_False,
-                'f_driver_decline': dummy_False,
-                'f_driver_repos': f_dummy_repos,
-                'f_stop_crit': dummy_False,
-                'f_timeout': None,
-                'kpi_pax': kpi_pax,
-                'kpi_veh': kpi_veh,
-                'monitor': True}
 
     def __init__(self, _inData, **kwargs):
         # input
         self.inData = _inData.copy()  # copy of data structure for simulations (copy needed for multi-threading)
         self.vehicles = self.inData.vehicles  # input
         self.platforms = self.inData.platforms  # input
+        self.defaults = DEFAULTS.copy()  # default configuration of decision functions
 
         self.myinit(**kwargs)  # part that is called every run
         # output
@@ -85,16 +86,7 @@ class Simulator:
 
     def myinit(self, **kwargs):
         # part of init that is repeated every run
-        self.DEFAULTS.update(kwargs)
-        self.params = self.DEFAULTS['params']  # json dict with parameters
-
-        # populate functions
-        self.functions = DotMap()
-        for f in self.DEFAULTS.keys():
-            if f in self.FNAMES:
-                self.functions[f] = self.DEFAULTS[f]
-        if self.functions.timeout is None:
-            self.functions.timeout = self.timeout
+        self.update_decisions_and_params(**kwargs)
 
         self.make_skims()
         self.set_variabilities()
@@ -234,17 +226,19 @@ class Simulator:
                     flag = True
                 elif travellerEvent.REJECTS_OFFER.name in trip.event.values:
                     flag = True
+                elif travellerEvent.ARRIVES_AT_PICKUP.name in trip.event.values:
+                    flag = False  # still to be handled - what happens if traveller waits and simulation is over
                 try:
-                    assert flag == True
+                    assert flag is True
                 except AssertionError:
-                    print(trip.event.unique())
-                    assert flag == True
+                    print(trip)
+                    assert flag is True
         self.logger.warning('assertion tests for simulation results - passed')
         # except:
         #     self.logger.info('assertion tests for simulation results - failed')
         #     swwssw
 
-    def dump(self, path=None, id="", inputs=True, results=True):
+    def dump(self, path=None, dump_id=None, inputs=True, results=True):
         """
         stores resulting files into .zip folder
         :param path:
@@ -256,8 +250,9 @@ class Simulator:
         if path is None:
             path = os.getcwd()
         Path(path).mkdir(parents=True, exist_ok=True)
+        dump_id = self.run_ids[-1] if dump_id is None else dump_id
 
-        with zipfile.ZipFile(os.path.join(path, 'res{}.zip'.format(id)), 'w') as csv_zip:
+        with zipfile.ZipFile(os.path.join(path, 'res{}.zip'.format(dump_id)), 'w') as csv_zip:
             if inputs:
                 for data in ['vehicles', 'passengers', 'requests', 'platforms']:
                     csv_zip.writestr("{}.csv".format(data), self.inData[data].to_csv())
@@ -267,6 +262,19 @@ class Simulator:
                 for key in self.res[0].keys():
                     csv_zip.writestr("{}.csv".format(key), self.res[0][key].to_csv())
         return csv_zip
+
+    def update_decisions_and_params(self, **kwargs):
+        self.defaults.update(kwargs)  # update defaults with kwargs
+        self.params = self.defaults['params']  # json dict with parameters
+
+        # populate functions
+        self.functions = DotMap()
+        for f in self.defaults.keys():
+            if f in self.FNAMES:
+                self.functions[f] = self.defaults[f]
+
+        if self.functions.timeout is None:
+            self.functions.timeout = self.timeout
 
     def make_skims(self):
         # uses distance skim in meters to populate 3 skims used in simulations

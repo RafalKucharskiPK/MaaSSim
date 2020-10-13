@@ -5,7 +5,7 @@ class TestMultiplatform(unittest.TestCase):
     def test_platform_competition(self):
         # make sure when you compete with the prcie, lowering the fare and increasing the fee
         from MaaSSim.data_structures import structures as local_inData
-        from MaaSSim.traveller import f_platform_choice
+        from MaaSSim.decisions import f_platform_choice
         from MaaSSim.simulators import simulate as platform_simulator_1
         from MaaSSim.utils import get_config, generate_vehicles, generate_demand, initialize_df, load_G
 
