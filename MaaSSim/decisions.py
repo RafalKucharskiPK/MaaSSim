@@ -235,7 +235,7 @@ def f_match(**kwargs):
                 for i in simpaxes:
                     sim.pax[i].update(event=travellerEvent.IS_REJECTED_BY_VEHICLE)
                     sim.pax[i].offers[platform.platform.name]['status'] = -2
-                sim.logger.warn("pax {:>4}  {:40} {}".format(request.name,
+                sim.logger.warning("pax {:>4}  {:40} {}".format(request.name,
                                                              'got rejected by vehicle ' + str(veh_id),
                                                              sim.print_now()))
                 platform.tabu.append((vehPos, reqPos))  # they are unmatchable
@@ -353,9 +353,9 @@ def f_stop_crit(*args, **kwargs):
     sim = kwargs.get('sim', None)
     convergence_threshold = 0.001
     _ = sim.run_ids[-1]
-    sim.logger.warn(sim.res[_].veh_exp[sim.res[_].veh_exp.ENDS_SHIFT > 0].shape[0])
+    sim.logger.warning(sim.res[_].veh_exp[sim.res[_].veh_exp.ENDS_SHIFT > 0].shape[0])
     if len(sim.runs) < 2:
-        sim.logger.warn('Early days')
+        sim.logger.warning('Early days')
         return False
     else:
         # example of convergence on waiting times
