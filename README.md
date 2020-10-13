@@ -38,6 +38,32 @@
 > Passenger optimize by selecting alternatives of maximal individual utility.
 >
 > Drivers, companies and platforms optimize by maximizing their profit, i.e. selecting the optimal strategy on prices, services, fleet, repositioning, marketing. 
+```python
+params = MaaSSim.utils.get_config('default.json') # load default config
+params.city = 'Wieliczka, Poland' # modify configuration
+inData = MaaSSim.utils.download_G(MaaSSim.data_structures.structures, params)  # download the graph for new city
+sim_1 = MaaSSim.maassim.simulate(params = params, inData = inData) # run the simulation
+params.nP = 50 # change number of travellers
+sim_2 = MaaSSim.maassim.simulate(params = params, inData = inData) # run the second simulation
+print(sim1.res[0].pax_kpi,sim2.res[0].pax_kpi)  # compare the results
+space = DotMap()
+space.nP = [50,100,200] # define the search space to explore in experiments
+MaaSSim.maassim.simulate_parallel(params = params, search_space = space) # run parallel experiments
+res = collect_results(params.paths.dumps) # collect results from  parallel experiments
+
+def my_function(**kwargs): # user defined function to represent agent behaviour
+    veh = kwargs.get('veh', None)  # input from simulation
+    sim = veh.sim  # access to simulation object
+    if len(sim.runs) > 0:
+        if sim.res[last_run].veh_exp.loc[veh.id].nRIDES > 3:
+            return False # if I had more than 3 rides yesterday I stay
+        else:
+            return True # otherwise I leave
+    else:
+        return True # I do not leave on first day
+sim = simulate(params = params, f_driver_out = f_my_driver_out) # simulate with my user defined function
+```
+
 
 # MaaSSim
 
