@@ -114,7 +114,7 @@ def simulate(config="../data/config/default.json", inData=None, params=None, **k
         inData.platforms.loc[0] = empty_series(inData.platforms)
         inData.platforms.fare = [1]
 
-    inData = prep_shared_rides(inData, params.shareability, sblt=None)  # prepare schedules
+    inData = prep_shared_rides(inData, params.shareability)  # prepare schedules
 
 
     sim = Simulator(inData, params=params, **kwargs)  # initialize

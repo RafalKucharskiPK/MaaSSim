@@ -7,9 +7,11 @@
 
 import pandas as pd
 import random
+from ExMAS.main import matching
+import ExMAS
 
 
-def prep_shared_rides(_inData, sp, sblt=None, _print=False):
+def prep_shared_rides(_inData, sp, _print=False):
     """
     Determines which requests are shareable,
     computes the matching with ExMAS,
@@ -40,9 +42,9 @@ def prep_shared_rides(_inData, sp, sblt=None, _print=False):
 
     else:  # sharing
         if sp.without_matching:  # was the shareability graph comouted before?
-            _inData = sblt.matching(_inData, sp, plot=False, _print=_print)  # if so, do only matching
+            _inData = matching(_inData, sp, plot=False)  # if so, do only matching
         else:
-            _inData = sblt.main(_inData, sp, plot=False, _print=_print)  # compute graph and do matching
+            _inData = ExMAS.main(_inData, sp, plot=False)  # compute graph and do matching
 
         # prepare schedules
         schedule = _inData.sblts.schedule
