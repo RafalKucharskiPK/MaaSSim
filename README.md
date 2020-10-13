@@ -38,6 +38,10 @@
 > Passenger optimize by selecting alternatives of maximal individual utility.
 >
 > Drivers, companies and platforms optimize by maximizing their profit, i.e. selecting the optimal strategy on prices, services, fleet, repositioning, marketing. 
+
+# MaaSSim at glance
+
+usage and overview
 ```python
 params = MaaSSim.utils.get_config('default.json') # load default config
 params.city = 'Wieliczka, Poland' # modify configuration
