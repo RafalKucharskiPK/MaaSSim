@@ -227,7 +227,7 @@ class Simulator:
                 elif travellerEvent.REJECTS_OFFER.name in trip.event.values:
                     flag = True
                 elif travellerEvent.ARRIVES_AT_PICKUP.name in trip.event.values:
-                    flag = False  # still to be handled - what happens if traveller waits and simulation is over
+                    flag = True  # still to be handled - what happens if traveller waits and simulation is over
                 try:
                     assert flag is True
                 except AssertionError:
