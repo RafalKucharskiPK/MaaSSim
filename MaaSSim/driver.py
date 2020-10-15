@@ -3,6 +3,7 @@
 # Description: Driver agent
 # Rafal Kucharski @ TU Delft, The Netherlands
 ################################################################################
+
 from enum import Enum
 import time
 
@@ -43,6 +44,7 @@ class VehicleAgent(object):
         self.veh = self.sim.vehicles.loc[veh_id].copy()  # copy of inData vehicle data
         self.platform_id = self.veh.platform  # id of a platform
         self.platform = self.sim.plats[self.platform_id]  # reference to the platform
+
         # local variables
         self.paxes = list()
         self.schedule = None  # schedule served by vehicle (single request for case of non-shared rides)
@@ -73,6 +75,7 @@ class VehicleAgent(object):
         self.append_ride()
 
     def append_ride(self):
+        """ appends current event in time and space to the log of vehicle rides """
         ride = dict()
         ride['veh'] = self.id
         ride['pos'] = self.veh.pos
@@ -96,6 +99,8 @@ class VehicleAgent(object):
         return min(till_shift_end, till_sim_end)
 
     def clear_me(self):
+        """ clear the requests and schedules to prepare for a next ride
+        (after arrival, rejection or whatever reason not to complete the requests"""
         self.arrives_at_pick_up = dict()  # init lists
         self.arrives = dict()
         self.requested = self.sim.env.event()  # initialize  request event

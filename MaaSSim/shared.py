@@ -76,6 +76,11 @@ def prep_shared_rides(_inData, sp, _print=False):
 
 
 def make_schedule_nonshared(requests):
+    """
+    preares the schedule for a non shared rides
+    :param requests: inData.requests
+    :return: schedule
+    """
     columns = ['node', 'time', 'req_id', 'od']
     degree = 2 * len(requests) + 1
     df = pd.DataFrame(None, index=range(degree), columns=columns)
@@ -89,6 +94,12 @@ def make_schedule_nonshared(requests):
 
 
 def make_schedule_shared(row):
+    """
+    prpepares a schedule of a shared ride for simulation
+    schedule is a sequence of visited nodes in time
+    :param row: single shared ride from ExMAS
+    :return:
+    """
     columns = ['node', 'time', 'req_id', 'od']
     degree = int(2 * row.degree + 1)
     schedule = pd.DataFrame(None, index=range(degree), columns=columns)
