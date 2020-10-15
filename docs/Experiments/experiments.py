@@ -5,7 +5,6 @@
 ################################################################################
 from MaaSSim.utils import get_config, load_G, save_config, prep_supply_and_demand, generate_demand, generate_vehicles, initialize_df  # simulator
 from MaaSSim.simulators import simulate, simulate_parallel
-from MaaSSim.simulators import simulate
 from MaaSSim.decisions import f_platform_choice
 
 import os
