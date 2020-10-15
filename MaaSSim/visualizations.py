@@ -104,36 +104,51 @@ def plot_veh_sim(sim, veh_id):
     t =  sim.runs[0].rides[sim.runs[0].rides.veh == veh_id]
     return plot_veh(sim.inData.G, t)
 
-def plot_veh(G, t, m_size=30, lw=2):
+def plot_veh(G, t, m_size=30, lw=2, annotate = False):
+    """
+    plots a trace of vehicle rides on a graph
+    :param G: osmnx graph (inData.G, or sim.inData.G)
+    :param t: trips
+    :param m_size: marker_size
+    :param lw: linew weight
+    :return: None
+    """
 
-    fig, ax = ox.plot_graph(G, figsize=(15, 15), node_size=0, edge_linewidth=0.3,
+    fig, ax = ox.plot_graph(G, figsize=(10, 10), node_size=0, edge_linewidth=0.3,
                             show=False, close=False,
                             edge_color='grey', bgcolor='white')
 
     t['node'] = t.pos
 
-    degs = t.apply(lambda x: len(x.paxes), axis=1)
+    degs = t.apply(lambda x: min(2,len(x.paxes)), axis=1)
+
     color_empty = 'lightsalmon'
     color_full = 'sienna'
+    alphas = [1, 0.4, 1]
+    colors = ['black', 'tab:blue', 'tab:green']
 
     routes = list()  # ride segments
     o = t.node.dropna().values[0]
-    ax.scatter(G.nodes[o]['x'], G.nodes[o]['y'], s=m_size, c='black', marker='x')
+    ax.scatter(G.nodes[o]['x'], G.nodes[o]['y'], s=m_size, c='tab:blue', marker='o')
     row = t.iloc[0]
-    ax.annotate("t:{}, paxes: {} {}".format(int(row.t), row.paxes, row.event),
-                (G.nodes[o]['x'] * 1.0002, G.nodes[o]['y'] * 1.00001))
+    if annotate:
+        ax.annotate("t:{}, paxes: {} {}".format(int(row.t), row.paxes, row.event),
+                    (G.nodes[o]['x'] * 1.0002, G.nodes[o]['y'] * 1.00001))
 
     for row in t.iloc[1:].iterrows():
         d = row[1].pos
         if o != d:
-            ax.scatter(G.nodes[d]['x'], G.nodes[d]['y'], s=m_size, c='black', marker='x')
-            ax.annotate("t:{}, paxes: {} {}".format(int(row[1].t), row[1].paxes, row[1].event),
-                        (G.nodes[d]['x'] * 1.0002, G.nodes[d]['y'] * 1.00001))
+            ax.scatter(G.nodes[d]['x'], G.nodes[d]['y'], s=m_size, c='tab:blue', marker='o')
+            if annotate:
+                ax.annotate("t:{}, paxes: {} {}".format(int(row[1].t), row[1].paxes, row[1].event),
+                            (G.nodes[d]['x'] * 1.0002, G.nodes[d]['y'] * 1.00001))
         routes.append(nx.shortest_path(G, o, d, weight='length'))
         o = d
     for i, route in enumerate(routes):
-        add_route(G, ax, route, color=color_empty if degs[i + 1] == 0 else color_full, lw=lw + degs[i + 1] ** 2 / 2,
-                  alpha=0.9)
+        add_route(G, ax, route, color=colors[degs[i+1]], lw=lw*(1 + 3*degs[i + 1]),
+                  alpha=alphas[degs[i+1]])
+        # add_route(G, ax, route, color=color_empty if degs[i + 1] == 0 else color_full, lw=lw + degs[i + 1] ** 2 / 2,
+        #           alpha=0.9)
     return ax
 
 def plot_trip(sim, pax_id, run_id=None):

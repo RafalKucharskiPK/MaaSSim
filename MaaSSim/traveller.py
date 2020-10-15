@@ -1,3 +1,10 @@
+################################################################################
+# Module: traveller.py
+# Description: Traveller agent
+# Rafal Kucharski @ TU Delft, The Netherlands
+################################################################################
+
+
 from enum import Enum
 import time
 from .driver import driverEvent
@@ -22,48 +29,119 @@ class travellerEvent(Enum):
 
 
 class PassengerAgent(object):
+    """
+    Traveller (Passenger) agent in the simulations.
+
+    Attributes
+    ----------
+    sim : Object
+      reference to the parent Simulator instance
+
+    id : int
+        reference in the list of simulated processes
+
+    rides: list
+        log of events with their time and position (node)
+
+    veh: Object
+        vehicle used by passenger (empty at creation, then self.sim.vehs[self.veh.name])
+
+    pax: pandas Series
+        reference to a simulated passenger
+
+    platform_ids: list(int)
+        list of platforms to which traveller is assigned
+
+    requests: pandas DataFrame
+        travel requests to be completed during the simulation (from inData.requests)
+
+    request: pandas Series
+        current travel request to be completed
+
+    schedule:  DotMap
+        schedule of a current request (sequence of nodes to be visited)
+
+    schedule_id: int
+        id of a schedule of a current request ()
+
+    schedule_leader: Bool
+        true for first picked-up traveller in a shared ride (of for a non-shared ride)
+
+    f_out: function
+        decision function to handle process of exiting due to previous experience
+
+    f_mode: function
+        decision function to handle the process of exiting due to low quality of offer
+
+    f_platform_choice: function
+     decision function to handle the process of exiting due to low quality of offer
+
+    pax_action: Simpy process
+        main routine of simulated traveller
+
+    my_schedule_triggered: Simpy event
+        trigerred when my co traveller already requested a shared rides
+
+    lost_shared_patience: Simpy event
+        trigerred when my co traveller lost patience
+
+    found_veh: Simpy event
+        trigerred when I have found matching vehicle
+
+    got_offered: Simpy event
+        trigerred when I got offered
+
+    arrived_at_pick_up : Simpy event
+        trigerred when I arrived for pick up
+
+    pickuped: Simpy event
+        trigerred when I got picked up
+
+    dropoffed: Simpy event
+        trigerred when I got dropped off
+    """
+
     def __init__(self, simData, pax_id):
         self.sim = simData  # reference to the parent Simulator instance
-        self.id = pax_id  # reference in the list of simulated processes
+        self.id = pax_id  # reference in the list of simulated passengers
         self.pax = self.sim.inData.passengers.loc[self.id].copy()  # reference to a simulated passenger
-        self.platform_ids = self.pax.platforms
+        self.platform_ids = self.pax.platforms  # list of platforms to which traveller is assigned
 
         self.requests = self.sim.inData.requests[self.sim.inData.requests.pax_id == pax_id]  # assign a requests
-
         self.request = self.requests.iloc[0]  # for the moment we consider only one request
         self.schedule = self.request.sim_schedule  # schedule serving this requests
         self.schedule_id = self.request.ride_id  # schedule serving this requests
         self.schedule_leader = self.request.position == 0  # orded in pickups - if it is 0 , you will request the ride,
-        if self.sim.params.get('debug', False): #  debugging test test
+
+        if self.sim.params.get('debug', False):  # debugging test test
             nodes = list(self.schedule.node.values)
             if self.request.origin != self.request.destination:
                 assert nodes.index(self.request.origin) < nodes.index(self.request.destination)
 
         self.rides = list()  # report of this passenger process, populated while simulating
-        # self.outcome = tripOutcome.NOT_PROCESSED.value #return of this process
 
-        # functions from kwargs at the sim level
+        # decision functions from kwargs at the sim level
         self.f_out = self.sim.functions.f_trav_out  # handles process of exiting due to previous experience
         self.f_mode = self.sim.functions.f_trav_mode  # handles the process of exitinng due to low quality of offer
         self.f_platform_choice = self.sim.functions.f_platform_choice  # handles the process of exitinng due to low quality of offer
 
         # events (https://simpy.readthedocs.io/en/latest/topical_guides/events.html)
         self.action = self.sim.env.process(self.pax_action())  # <--- main process
-        self.my_schedule_triggered = self.sim.env.event()
-        self.lost_shared_patience = self.sim.env.event()
-        self.found_veh = self.sim.env.event()
-        self.got_offered = self.sim.env.event()
-        self.arrived_at_pick_up = self.sim.env.event()
-        self.pickuped = self.sim.env.event()
-        self.dropoffed = self.sim.env.event()
+        self.my_schedule_triggered = self.sim.env.event()  # my co traveller already requested a shared rides
+        self.lost_shared_patience = self.sim.env.event()  # my co traveller lost patience
+        self.found_veh = self.sim.env.event()  # I have found matching vehicle
+        self.got_offered = self.sim.env.event()  # I got offered
+        self.arrived_at_pick_up = self.sim.env.event()  # I arrived for pick up
+        self.pickuped = self.sim.env.event()   # I got picked up
+        self.dropoffed = self.sim.env.event()  # I got dropped off
 
         self.veh = None  # vehicle used by passenger (empty at creation)
-        self.offer = dict()
-        self.offers = dict()
-        self.msg = ''
-        self.t_matching = None
+        self.offer = dict()  # selected offer
+        self.offers = dict()  # received offers (from various platforms)
+        self.msg = ''  # log message
 
-        self.sharing_not_requesting = False # depreciated
+        self.t_matching = None  # time for match
+
 
     def update(self, event, pos=None, t=True, db_update=True):
         """call whenever pos or event of vehicle changes
@@ -104,7 +182,6 @@ class PassengerAgent(object):
             # self.reqs[platform_id].cancel()
 
     def pax_action(self):
-
         """main routine of the passenger process,
         passes through the travellerEvent sequence in time and space"""
         self.update(event=travellerEvent.STARTS_DAY)
@@ -191,7 +268,6 @@ class PassengerAgent(object):
 
         self.msg = "pax {:>4}  {:40} {}".format(self.pax.name, self.msg, self.sim.print_now())
         self.sim.logger.info(self.msg)
-        # self.update(event = travellerEvent.EXIT)
 
 
 

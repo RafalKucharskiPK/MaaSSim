@@ -1,3 +1,10 @@
+################################################################################
+# Module: platform.py
+# Platform agent
+# Rafal Kucharski @ TU Delft
+################################################################################
+
+
 from .driver import driverEvent
 from .traveller import travellerEvent
 import simpy
@@ -8,17 +15,61 @@ class PlatformAgent(object):
     """
     Handles queues of its own vehicles and serves the requests of the passengers.
     Transactions are either event_based (whenever Q changes) or batched and triggered in intervals.
-    Main function f_match is external and user defined one may be passed by reference to Simulator
+    Main function f_match is external and can be user defined when passed by reference to the Simulator
+
+    Attributes
+    ----------
+    sim : Object
+      reference to the parent Simulator instance
+
+    id : int
+        reference in the list of simulated processes
+
+    platform: pandas Series
+        reference to a simulated platform
+
+     f_match: function
+        handles process of exiting due to previous experience
+
+    event_based: Bool
+        determines the way of handling the requests, inherited from Sim
+
+    batch_time: Bool
+        time interval [s] to match the requests for non event_based platforms
+
+    resource: simpy.Resource
+        object managing serving the queues of requests to serve the queue
+
+    vehQ: list
+        list of ids of queuing vehicles
+
+    reqQ: list
+        list of ids of queuing travellers
+
+    Qs: list
+        log of Queues
+
+    offers: dict
+        list of offers made to travellers
+
+    tabu: list(int, int)
+        rejected veh - traveller pairs
+
+    plat_action: Simpy.process
+        main process triggered when new request or new vehicle arrives
+
+    f_match: function
+        the main matching process
     """
 
     def __init__(self, simData, platform_id):
         self.sim = simData  # reference to the parent Simulator instance
         self.id = platform_id  # reference in the list of simulated processes
-        self.platform = self.sim.inData.platforms.loc[self.id].copy()  # reference to platform
+        self.platform = self.sim.inData.platforms.loc[self.id].copy()  # reference to the platform
         self.f_match = self.sim.functions.f_match  # handles process of exiting due to previous experience
         self.event_based = self.sim.defaults.get('event_based', True)  # way of handling the reuqests
         self.batch_time = self.platform.batch_time  # time interval [s] to match the requests
-        self.resource = simpy.Resource(self.sim.env, capacity=100)
+        self.resource = simpy.Resource(self.sim.env, capacity=1000)
         self.vehQ = list()  # list of ids of queuing vehicles
         self.reqQ = list()  # list of ids of queuing travellers
         self.offers = dict()  # list of offers made to travellers
@@ -91,6 +142,11 @@ class PlatformAgent(object):
         self.appendVeh(offer['veh_id'])  # bring this vehicle back to the queue
 
     def handle_accepted(self, offer_id):
+        """
+        triggered when offer made earlier is accepted by traveller
+        :param offer_id:
+        :return:
+        """
         offer = self.offers[offer_id]
         offer['status'] = -1
         veh = self.sim.vehs[offer['veh_id']]

@@ -163,8 +163,8 @@ class Simulator:
     def output(self, run_id=None):
         # called after the run for refined results
         run_id = self.run_ids[-1] if run_id is None else run_id
-        ret = self.functions.kpi_pax(simrun=self.runs[run_id])
-        veh = self.functions.kpi_veh(simrun=self.runs[run_id], vehindex=self.inData.vehicles.index)
+        ret = self.functions.kpi_pax(sim = self, run_id = run_id)
+        veh = self.functions.kpi_veh(sim = self, run_id = run_id)
         ret.update(veh)
         self.res[run_id] = DotMap(ret)
 
@@ -227,7 +227,7 @@ class Simulator:
                 elif travellerEvent.REJECTS_OFFER.name in trip.event.values:
                     flag = True
                 elif travellerEvent.ARRIVES_AT_PICKUP.name in trip.event.values:
-                    flag = False  # still to be handled - what happens if traveller waits and simulation is over
+                    flag = True  # still to be handled - what happens if traveller waits and simulation is over
                 try:
                     assert flag is True
                 except AssertionError:
