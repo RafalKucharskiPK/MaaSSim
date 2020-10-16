@@ -91,7 +91,9 @@ Fig. 4. Searching for optimal platform competition strategy, platform competes o
 
 # Installation (recommended):
 
-`pip install maassin`
+`pip install maassim`
+
+or clone this repository
     
 ### dependencies
 ---
@@ -101,8 +103,8 @@ Fig. 4. Searching for optimal platform competition strategy, platform competes o
 #### networkX
  graph package capable of efficient graph operations, i.e. path searches (https://networkx.github.io/documentation/networkx-1.10/reference/introduction.html)
 
-#### osmNX
-   allows to donwload network (road, walk, bike, ...) from OSM via into _networkX_ python format. 
+#### osmNX (presumalby the hardest dependenciy that causes most of issues)
+   allows to donwload network (road, walk, bike, ...) from OSM via into _networkX_ python format. (see: https://github.com/gboeing/osmnx#installation for installation)
    
 #### pandas
    data input and output via .csv files. 
