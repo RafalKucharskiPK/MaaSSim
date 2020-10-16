@@ -15,9 +15,6 @@ The simulation run results in two sets of records, one being sequence of space-t
 
 ## MaaSSim usage and functionalities at glance
 
-![MAP](ExMAS/data/map.png)
-
-
 ```python
 sim = MaaSSim.simulators.simulate(config = 'glance.json')  # run the simulation from a given configuration
 sim.runs[0].trips  # access the results
@@ -66,8 +63,8 @@ sim = MaaSSim.simulators.simulate(inData=inData,params=params, f_driver_out = my
 # Overview
 
 
-![e1a](https://github.com/RafalKucharskiPK/MaaSSim/tree/master/docs/tutorials/figs/e1a.png)
-![e1b](https://github.com/RafalKucharskiPK/MaaSSim/tree/master/docs/tutorials/figs/e1b.png)
+![e1a](github.com/RafalKucharskiPK/MaaSSim/tree/master/docs/tutorials/figs/e1a.png)
+![e1b](github.com/RafalKucharskiPK/MaaSSim/tree/master/docs/tutorials/figs/e1b.png)
 *Fig. 1 Average waiting times for travellers until the driver arrives (a) and for driver, until they get requested (b) in Delft.
 Results from 20 replications of four hour simulation with 200 travellers and 10 vehicles in Delft, Netherlands. While travellers need
 to wait longer in western part of the city, the vehicles wait for requests shorter there and their waiting times longest in eastern
