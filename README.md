@@ -1,5 +1,5 @@
 # MaaSSim
-# agent-based two-sided mobility platform simulator
+## agent-based two-sided mobility platform simulator
 
 * (c) TU Delft, Critical MaaS ERC grant
 * contributors: Rafal Kucharski, Oded Cats, ....
