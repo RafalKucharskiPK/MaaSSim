@@ -1,12 +1,13 @@
 # MaaSSim
 ## agent-based two-sided mobility platform simulator
 
-* (c) TU Delft, Critical MaaS ERC grant
-* contributors: Rafal Kucharski, Oded Cats, ....
 
 [![CodeFactor](https://www.codefactor.io/repository/github/rafalkucharskipk/maassim/badge)](https://www.codefactor.io/repository/github/rafalkucharskipk/maassim)
 [![Build Status](https://travis-ci.org/RafalKucharskiPK/MaaSSim.svg?branch=master)](https://travis-ci.org/RafalKucharskiPK/MaaSSim)
 [![Coverage Status](https://coveralls.io/repos/github/RafalKucharskiPK/MaaSSim/badge.svg?branch=master)](https://coveralls.io/github/RafalKucharskiPK/MaaSSim?branch=master)
+
+<img src="data/SPTL.png" alt="drawing" width="100"/><img src="data/CM.png" alt="drawing" width="120"/><img src="data/LOGO-ERC.jpg" alt="drawing" width="80"/>
+
 
 
 
