@@ -3,7 +3,7 @@ from distutils.core import setup
 setup(
     name='MaaSSim',
     packages=['MaaSSim'],  # Chose the same as "name"
-    version='1.0',  # Start with a small number and increase it with every change you make
+    version='0.9',  # Start with a small number and increase it with every change you make
     license='MIT',  # Chose a license from here: https://help.github.com/articles/licensing-a-repository
     description="agent-based two-sided mobility platform simulator",
     author='Rafal Kucharski',  # Type in your name

@@ -77,7 +77,7 @@ def simulate_parallel(config="../data/config/parallel.json", inData=None, params
           workers=params.parallel.get('nThread',1))
 
 
-def simulate(config="../data/config/default.json", inData=None, params=None, **kwargs):
+def simulate(config="data/config.json", inData=None, params=None, **kwargs):
     """
     main runner and wrapper
     loads or uses json config to prepare the data for simulation, run it and process the results
