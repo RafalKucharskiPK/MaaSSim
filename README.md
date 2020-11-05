@@ -1,7 +1,8 @@
 # MaaSSim
+## agent-based two-sided mobility platform simulator
 
 * (c) TU Delft, Critical MaaS ERC grant
-* contributors: Rafal Kucharski, Oded Cats, Arjan de Ruijter ....
+* contributors: Rafal Kucharski, Oded Cats, ....
 
 [![CodeFactor](https://www.codefactor.io/repository/github/rafalkucharskipk/maassim/badge)](https://www.codefactor.io/repository/github/rafalkucharskipk/maassim)
 [![Build Status](https://travis-ci.org/RafalKucharskiPK/MaaSSim.svg?branch=master)](https://travis-ci.org/RafalKucharskiPK/MaaSSim)
@@ -14,9 +15,6 @@ Agents are decision makers, specifically, travellers may decide which mode they 
 The simulation run results in two sets of records, one being sequence of space-time locations and statuses for simulated vehicles and the other for travellers. Further synthesized into agent-level and system-wide KPIs for further analyses.
 
 ## MaaSSim usage and functionalities at glance
-
-![MAP](ExMAS/data/map.png)
-
 
 ```python
 sim = MaaSSim.simulators.simulate(config = 'glance.json')  # run the simulation from a given configuration
@@ -66,30 +64,37 @@ sim = MaaSSim.simulators.simulate(inData=inData,params=params, f_driver_out = my
 # Overview
 
 
-![e1a](https://github.com/RafalKucharskiPK/MaaSSim/tree/master/docs/tutorials/figs/e1a.png)
-![e1b](https://github.com/RafalKucharskiPK/MaaSSim/tree/master/docs/tutorials/figs/e1b.png)
+![e1a](docs/tutorials/figs/e1a.png)
+![e1b](docs/tutorials/figs/e1b.png)
+
 *Fig. 1 Average waiting times for travellers until the driver arrives (a) and for driver, until they get requested (b) in Delft.
 Results from 20 replications of four hour simulation with 200 travellers and 10 vehicles in Delft, Netherlands. While travellers need
 to wait longer in western part of the city, the vehicles wait for requests shorter there and their waiting times longest in eastern
 part, where, in turn, traveller waiting times are shorter.*
 
 
-![e2](https://github.com/RafalKucharskiPK/MaaSSim/tree/master/docs/tutorials/figs/e2.png)
-* Fig. 2 Service performance for various demand and supply levels. Average waiting times for traveller (left) and drivers (right). We can see opposite diagonal trends: System performance for traveller improves with increasing supply on one hand and decreasing demand on another, as travellers are served with lower waiting times. Conversely, if demand increases and fleet size decreases, the system improves for drivers, who need to wait less before requested. Yielding an interesting competitive structure, specific to two-sided platforms. *
+![e2](docs/tutorials/figs/e2.png)
 
-![e3](https://github.com/RafalKucharskiPK/MaaSSim/tree/master/docs/tutorials/figs/e3.png)
-* Searching for optimal platform competition strategy, platform competes on ma market with competitor operating fleet of 20 vehicles at fare of 1.0 unit/km. We explore average vehicle kilometers per driver (a) and total platform revenues (b) resulting from varying fleet size (x-axis) and fare (per-kilometer) and 10 replications.*
+*Fig. 2. Service performance for various demand and supply levels. Average waiting times for traveller (left) and drivers (right). We can see opposite diagonal trends: System performance for traveller improves with increasing supply on one hand and decreasing demand on another, as travellers are served with lower waiting times. Conversely, if demand increases and fleet size decreases, the system improves for drivers, who need to wait less before requested. Yielding an interesting competitive structure, specific to two-sided platforms. *
 
-![e4](https://github.com/RafalKucharskiPK/MaaSSim/tree/master/docs/tutorials/figs/e4.png)
-* Fig 3 Driver reinforced learning behaviour, based on previous experience and expected outcomes, they make a daily decisions to opt out, or stay in the system. Initially high supply does not allow them to reach the desired income level, so many drivers opt out, yet as the fleet size decreases, the incomes for remaining drivers increase, making it reasonable for drivers to return to the system. Depending on user-defined configuration of learning process an realistic adaptive behaviour may be reproduced *
+![e3](docs/tutorials/figs/e3.png)
 
-![e5a](https://github.com/RafalKucharskiPK/MaaSSim/tree/master/docs/tutorials/figs/e5a.png)
-![e5b](https://github.com/RafalKucharskiPK/MaaSSim/tree/master/docs/tutorials/figs/e5b.png)
-* Trace of rides for a single simulated vehicle without (a) and with pooled ride services (b). Segments marked with green were travelled with more than one traveller, segments marked with black were travelled empty. *
+Fig. 4. Searching for optimal platform competition strategy, platform competes on ma market with competitor operating fleet of 20 vehicles at fare of 1.0 unit/km. We explore average vehicle kilometers per driver (a) and total platform revenues (b) resulting from varying fleet size (x-axis) and fare (per-kilometer) and 10 replications.*
+
+![e4](docs/tutorials/figs/e4.png)
+
+*Fig. 4. Driver reinforced learning behaviour, based on previous experience and expected outcomes, they make a daily decisions to opt out, or stay in the system. Initially high supply does not allow them to reach the desired income level, so many drivers opt out, yet as the fleet size decreases, the incomes for remaining drivers increase, making it reasonable for drivers to return to the system. Depending on user-defined configuration of learning process an realistic adaptive behaviour may be reproduced *
+
+![e5a](docs/tutorials/figs/e5a.png)
+![e5b](docs/tutorials/figs/e5b.png)
+
+*Fig. 5. Trace of rides for a single simulated vehicle without (a) and with pooled ride services (b). Segments marked with green were travelled with more than one traveller, segments marked with black were travelled empty. *
 
 # Installation (recommended):
 
-`pip install maassin`
+`pip install maassim`
+
+or clone this repository
     
 ### dependencies
 ---
@@ -99,8 +104,8 @@ part, where, in turn, traveller waiting times are shorter.*
 #### networkX
  graph package capable of efficient graph operations, i.e. path searches (https://networkx.github.io/documentation/networkx-1.10/reference/introduction.html)
 
-#### osmNX
-   allows to donwload network (road, walk, bike, ...) from OSM via into _networkX_ python format. 
+#### osmNX (presumalby the hardest dependenciy that causes most of issues)
+   allows to donwload network (road, walk, bike, ...) from OSM via into _networkX_ python format. (see: https://github.com/gboeing/osmnx#installation for installation)
    
 #### pandas
    data input and output via .csv files. 
