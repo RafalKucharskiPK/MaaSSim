@@ -26,17 +26,23 @@ import sys
 import logging
 
 DEFAULTS = dict(f_match=f_match,
-                f_trav_out=dummy_False,
-                f_driver_learn=dummy_False,
+                f_driver_learn=dummy_False,  # deprecated
+
                 f_driver_out=dummy_False,
-                f_trav_mode=dummy_False,
                 f_driver_decline=dummy_False,
-                f_platform_choice = dummy_False,
                 f_driver_repos=f_dummy_repos,
+
+                f_trav_out=dummy_False,
+                f_trav_mode=dummy_False,
+                f_platform_choice = dummy_False,
+
+
                 f_stop_crit=dummy_False,
                 f_timeout=None,
+
                 kpi_pax=kpi_pax,
                 kpi_veh=kpi_veh,
+
                 monitor=True)
 
 
