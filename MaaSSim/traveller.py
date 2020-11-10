@@ -67,10 +67,10 @@ class PassengerAgent(object):
     schedule_leader: Bool
         true for first picked-up traveller in a shared ride (of for a non-shared ride)
 
-    f_out: function
+    f_trav_out: function
         decision function to handle process of exiting due to previous experience
 
-    f_mode: function
+    f_trav_mode: function
         decision function to handle the process of exiting due to low quality of offer
 
     f_platform_choice: function
@@ -121,8 +121,8 @@ class PassengerAgent(object):
         self.rides = list()  # report of this passenger process, populated while simulating
 
         # decision functions from kwargs at the sim level
-        self.f_out = self.sim.functions.f_trav_out  # handles process of exiting due to previous experience
-        self.f_mode = self.sim.functions.f_trav_mode  # handles the process of exitinng due to low quality of offer
+        self.f_trav_out = self.sim.functions.f_trav_out  # handles process of exiting due to previous experience
+        self.f_trav_mode = self.sim.functions.f_trav_mode  # handles the process of exitinng due to low quality of offer
         self.f_platform_choice = self.sim.functions.f_platform_choice  # handles the process of exitinng due to low quality of offer
 
         # events (https://simpy.readthedocs.io/en/latest/topical_guides/events.html)
@@ -185,7 +185,7 @@ class PassengerAgent(object):
         """main routine of the passenger process,
         passes through the travellerEvent sequence in time and space"""
         self.update(event=travellerEvent.STARTS_DAY)
-        if self.f_out(pax=self):
+        if self.f_trav_out(pax=self):
             self.msg = 'decided not to travel with MaaS'
             self.update(event=travellerEvent.PREFERS_OTHER_SERVICE)
         else:
@@ -214,7 +214,7 @@ class PassengerAgent(object):
                     did_i_opt_out = self.f_platform_choice(traveller=self)
                 elif len(self.offers) == 1:
                     platform_id, offer = list(self.offers.items())[0]
-                    if self.f_mode(traveller = self):
+                    if self.f_trav_mode(traveller = self):
                         self.sim.plats[platform_id].handle_rejected(offer['pax_id'])
                         did_i_opt_out = True
                     else:
