@@ -20,6 +20,8 @@ Each simulation run results in two sets of outputs, one being the sequence of re
 
 The emergence of two-sided mobility markets disrupts the transport landscape. Conventional models for transport planning and operations are focused on top-down planning of service lines, timetable and traffic control measures which are not directly suitable for capturing the double-sided dynamics of mobility on demand services. This calls for the development of models that explicitly account for both supply-side and demand-side dynamics, as well as their interaction with the intermediate matching platform. In particular, in order to capture the bottom-up emerging order resulting from two-sided mobility, it is essential to revise the modelling approach of key elements of the transport system: demand (which is now inherently microscopic), supply (which has become a decision maker) and a road network (which capacity and congestion are no longer a single pivot variable of assignment models) along with a new agent, the platform, which orchestrates supply and demand interaction and which might be subject to regulation.
 
+![Alt Text](data/MaaSSim_animation.gif)
+
 ## MaaSSim usage and functionalities at glance
 
 ```python
