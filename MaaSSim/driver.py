@@ -63,6 +63,8 @@ class VehicleAgent(object):
         # main action
         self.action = self.sim.env.process(self.loop_day())  # main process in simu
 
+        self.waiting = True
+
     def update(self, event=None, pos=None, db_update=True):
         # call whenever pos or event of vehicle changes
         # keeping consistency with DB during simulation
@@ -119,13 +121,35 @@ class VehicleAgent(object):
         self.update(event=driverEvent.OPENS_APP)  # in the system
 
         while True:
-            # try:  # depreciated since now traveller rejects instantly for simplicity
-            repos = self.f_driver_repos(veh=self)  # reposition yourself
-            if repos.flag:  # if reposition
-                self.update(event=driverEvent.STARTS_REPOSITIONING)
-                yield self.sim.timeout(repos.time, variability=self.sim.vars.ride)
-                self.update(event=driverEvent.REPOSITIONED, pos=repos.pos)
+
             self.platform.appendVeh(self.id)  # appended for the queue
+            if not self.veh.get('use_repos',False):
+                yield self.requested | self.sim.timeout(self.till_end())
+            elif self.schedule is None:
+                #repositioning loop
+                while True:
+                    repos = self.f_driver_repos(veh=self)
+                    if not repos.wait and self.waiting:
+                        self.waiting = False
+                        self.update(event=driverEvent.STARTS_REPOSITIONING)
+                    elif repos.wait and not self.waiting:
+                        self.waiting = True
+
+                    yield self.requested | self.sim.timeout(repos.time) | self.sim.timeout(self.till_end())
+                    if self.schedule is not None:
+                        # self.update(event=driverEvent.REPOSITIONED, pos = repos.pos)
+                        break
+                    elif self.till_end() < 1:
+                        # self.update(event=driverEvent.REPOSITIONED, pos = repos.pos)
+                        break
+                    elif not repos.wait:
+                        self.update(event=driverEvent.REPOSITIONED, pos=repos.pos)
+
+            #if repos.flag:  # if reposition
+            #    self.update(event=driverEvent.STARTS_REPOSITIONING)
+            #    yield self.sim.timeout(repos.time, variability=self.sim.vars.ride)
+            #    self.update(event=driverEvent.REPOSITIONED, pos=repos.pos)
+            #self.platform.appendVeh(self.id)  # appended for the queue
             yield self.requested | self.sim.timeout(self.till_end())  # wait until requested or shift end
             if self.schedule is None:
                 if self.id in self.sim.vehQ:  # early exit if I quit shift, or sim ends
