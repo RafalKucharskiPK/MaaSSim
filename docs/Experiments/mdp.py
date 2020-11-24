@@ -84,9 +84,9 @@ inData = ExMAS.main(inData, params.shareability, plot=False)  # create shareabil
 
 
 ret = list()
-for p in [0.5]: #np.arange(0, 1.0001, 0.05):
+for p in np.arange(0, 1.0001, 0.05):
     params.p = p
-    for repl in range(1):
+    for repl in range(10):
         # assing travellers to platforms
         inData.passengers.platforms = inData.passengers.apply(lambda x: [1] if random.random() < params.p else [2], axis=1)
         inData.requests['platform'] = inData.requests.apply(lambda row: inData.passengers.loc[row.name].platforms[0], axis=1)
@@ -97,7 +97,7 @@ for p in [0.5]: #np.arange(0, 1.0001, 0.05):
         params.assert_me = False
         # initialize Simulator object
         sim = Simulator(inData, params=params, print=True, f_trav_out=f_platform_opt_out, logger_level=logging.WARNING)
-        
+
         #try:
         sim.make_and_run()  # run simulations
         sim.output()  # process results
