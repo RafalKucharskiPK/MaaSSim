@@ -1,22 +1,3 @@
-# try: # this is how it actually imports
-#     from core.main import Simulator
-#     from core.sim_utils import *
-#     from sblt import sblt
-#     from core.shared import prep_shared_rides
-#
-#     from core.sim_utils import structures as inData
-#     pd.set_option('mode.chained_assignment', None)
-#
-# except:  # and this is just how it sees modules in PyCharm... to be fixed
-#     from .core.main import Simulator
-#     from .core.sim_utils import *
-#     from .sblt import sblt
-#     from .core.shared import prep_shared_rides
-#
-#     from .core.sim_utils import structures as inData
-#     pd.set_option('mode.chained_assignment', None)
-
-
 from MaaSSim.maassim import Simulator
 from MaaSSim.shared import prep_shared_rides
 from MaaSSim.data_structures import structures as inData
@@ -55,60 +36,51 @@ def get_wait_travel_times(_sim):
         ret[req.name] = {'wait_time': wait, 'travel_time': travel, 'platform':req.platform}
     return pd.DataFrame(ret).T
 
-
+# config
 params = get_config('mdp.json')  # load parameters
-params.nP = 1000
-params.shareability.nP = params.nP
-params.t0 = pd.Timestamp.now()
+params.nP = 1000  # number of passengers
+params.nV = 100  # number of vehicles
+params.simTime = 4  # hours of simulations
+params.shareability.nP = params.nP # nothing
+params.t0 = '07:00'  # start time
 
 inData = load_G(inData, params, stats=True)  # load the graph of Delft
 
-inData = generate_demand(inData, params, avg_speed=False)  # generate requests (o,d,t) - random
+inData = generate_demand(inData, params, avg_speed=False)  # generate 1000 trip requests (o,d,t) - random
 
 inData.platforms = initialize_df(inData.platforms)  # create platforms
 inData.platforms.loc[1] = [1, 'Platform1', 30]  # those platform attributes are not used now
 inData.platforms.loc[2] = [1, 'Platform2', 30]
 
-inData.vehicles = generate_vehicles(inData, params.nV)  # create vehicles
+inData.vehicles = generate_vehicles(inData, params.nV)  # create vehicles (random starting positions)
+# 50-50 split of vehicles to platforms (first half to first platform, second to the second)
 inData.vehicles.platform = inData.vehicles.apply(lambda x: 1 if x.name <= params.nV / 2 else 2,
-                                                 axis=1)  # 50-50 split of vehicles to platforms
+                                                 axis=1)
 
+params.p = 0.3  # determine split of travellers
+inData.passengers.platforms = inData.passengers.apply(
+    lambda x: [1] if random.random() < params.p else [2], axis=1)  # assign travellers to platforms according to split
 
-params.p = 0.5  # split between platforms
+inData.requests['platform'] = inData.requests.apply(
+    lambda row: inData.passengers.loc[row.name].platforms[0], axis=1)  # this you also need to call
 
-inData.passengers.platforms = inData.passengers.apply(lambda x: [1] if random.random() < params.p else [2], axis=1)
-inData.requests['platform'] = inData.requests.apply(lambda row: inData.passengers.loc[row.name].platforms[0], axis=1)
+inData = ExMAS.main(inData, params.shareability, plot=False)  # here you calculate all feasible shared rides
+# do this before entering the loop, takes a lot of time
 
-inData = ExMAS.main(inData, params.shareability, plot=False)  # create shareability graph (ExMAS)
-#inData = sblt.calc_sblt(inData, params.shareability, plot=False, _print=True)  # calculate the shareability graph
+for i in [0]: # here your loop may start
+    # assign travellers to platforms according to split
+    inData.passengers.platforms = inData.passengers.apply(lambda x: [1] if random.random() < params.p else [2], axis=1)
+    inData.requests['platform'] = inData.requests.apply(lambda row: inData.passengers.loc[row.name].platforms[0], axis=1)
+    inData.sblts.requests.platform = inData.requests.platform
 
+    inData = prep_shared_rides(inData, params.shareability, _print=True) # here we do the matching of trips per platform
 
-ret = list()
-for p in np.arange(0, 1.0001, 0.05):
-    params.p = p
-    for repl in range(10):
-        # assing travellers to platforms
-        inData.passengers.platforms = inData.passengers.apply(lambda x: [1] if random.random() < params.p else [2], axis=1)
-        inData.requests['platform'] = inData.requests.apply(lambda row: inData.passengers.loc[row.name].platforms[0], axis=1)
-        inData.sblts.requests.platform = inData.requests.platform
+    # create Simulator object
+    sim = Simulator(inData, params=params, print=True, f_trav_out=f_platform_opt_out, logger_level=logging.CRITICAL)
 
-        # here we do the matching of trips per platform
-        inData = prep_shared_rides(inData, params.shareability, _print=True)
-        params.assert_me = False
-        # initialize Simulator object
-        sim = Simulator(inData, params=params, print=True, f_trav_out=f_platform_opt_out, logger_level=logging.WARNING)
+    sim.make_and_run()  # run simulations
+    sim.output()  # process results
+    # sim.dump() # if you want detailed results (trips and rides trajectories)
 
-        #try:
-        sim.make_and_run()  # run simulations
-        sim.output()  # process results
-        res = get_wait_travel_times(sim)  # calculate our KPIs (wait and travel time)
-        res['p'] = p  # store column with platform split
-        res['repl'] = repl  # store column with replication id
-        ret.append(res)
-        #except:
-        #    pass
-
-
-df = pd.concat(ret)  # store the precomputed results to csv
-df['pax'] = df.index.copy()
-df.to_csv('offline.csv', index=False)
+    res = get_wait_travel_times(sim)  # calculate our KPIs (wait and travel time)
+res.to_csv('results.csv', index=True)
