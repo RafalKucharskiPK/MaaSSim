@@ -2,8 +2,8 @@ simpy==3.0.11
 networkx==2.4
 numpy==1.18.5
 matplotlib==3.2.2
-pandas>=1.0.5
+pandas==1.0.5
 seaborn==0.10.1
-scipy>=1.4.1
+scipy==1.4.1
 dotmap==1.2.20
 exmas==0.9.99
