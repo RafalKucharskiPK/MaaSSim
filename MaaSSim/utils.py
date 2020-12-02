@@ -277,7 +277,7 @@ def prep_supply_and_demand(_inData, params):
                                                           axis=1)
 
     _inData.platforms = initialize_df(_inData.platforms)
-    _inData.platforms.loc[0] = [1, 'Platform', 1]
+    _inData.platforms.loc[0] = [params.platforms.base_fare, params.platforms.km_fare, params.platforms.comm_rate, params.platforms.min_fare, 'Platform A', 1]
     return _inData
 
 

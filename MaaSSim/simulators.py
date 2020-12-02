@@ -112,7 +112,10 @@ def simulate(config="data/config.json", inData=None, params=None, **kwargs):
     if len(inData.platforms) == 0:  # only if no platforms in input
         inData.platforms = initialize_df(inData.platforms)
         inData.platforms.loc[0] = empty_series(inData.platforms)
-        inData.platforms.fare = [1]
+        inData.platforms.km_fare = [1]
+        inData.platforms.base_fare = [0]
+        inData.platforms.comm_rate = [0.25]
+        inData.platforms.min_fare = [0]
 
     inData = prep_shared_rides(inData, params.shareability)  # prepare schedules
 
@@ -133,4 +136,3 @@ if __name__ == "__main__":
     from MaaSSim.utils import test_space
 
     simulate_parallel(search_space = test_space())
-
