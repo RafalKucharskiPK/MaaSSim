@@ -18,7 +18,8 @@ from pathlib import Path
 
 from MaaSSim.traveller import PassengerAgent, travellerEvent
 from MaaSSim.driver import VehicleAgent
-from MaaSSim.decisions import f_dummy_repos, f_match, dummy_False
+from MaaSSim.decisions import f_dummy_repos, dummy_False
+from decisions import f_match
 from MaaSSim.platform import PlatformAgent
 from MaaSSim.performance import kpi_pax, kpi_veh
 from MaaSSim.utils import initialize_df
@@ -135,7 +136,10 @@ class Simulator:
         self.logger.info("-------------------\tSimulation over\t\t-------------------")
         if len(self.reqQ) >= 0:
             self.logger.info(f"queue of requests {len(self.reqQ)}")
-        self.logger.warning(f"simulation time {round(self.sim_end - self.sim_start, 1)} s")
+        if run_id==None:
+            self.logger.warning(f"simulation time {round(self.sim_end - self.sim_start, 1)} s")
+        else:
+            self.logger.warning(f"day {run_id}: simulation time {round(self.sim_end - self.sim_start, 1)} s") 
         self.make_res(run_id)
         if self.params.get('assert_me', True):
             self.assert_me()  # test consistency of results

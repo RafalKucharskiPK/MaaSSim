@@ -1,4 +1,5 @@
-from .driver import driverEvent
+from MaaSSim.driver import driverEvent
+from MaaSSim.utils import generate_vehicles
 import pandas as pd
 import numpy as np
 from dotmap import DotMap
@@ -7,9 +8,11 @@ import random
 
 def D2D_veh_exp(*args,**kwargs):
     #calculate vehicle KPIs (global and individual)
-    params = kwargs.get('params',None)
-    simrun = kwargs.get('simrun',None)
-    vehindex = kwargs.get('vehindex',None)
+    sim =  kwargs.get('sim', None)
+    run_id = kwargs.get('run_id', None)
+    simrun = sim.runs[run_id]
+    vehindex = sim.inData.vehicles.index
+    params = sim.params
     df = simrun['rides'].copy() #results of previous simulation
     DECIDES_NOT_TO_DRIVE = df[df.event == driverEvent.DECIDES_NOT_TO_DRIVE.name].veh # track drivers out
     dfs = df.shift(-1) # to map time periods between events
@@ -19,7 +22,7 @@ def D2D_veh_exp(*args,**kwargs):
     df=df[~(df.t == df.t_s)] # filter for positive time periods only
     df['dt'] = df.t_s - df.t # make time intervals
     ret = df.groupby(['veh','event'])['dt'].sum().unstack() #aggregated by vehicle and event
-    del ret.columns.name
+    ret.columns.name = None
     ret = ret.reindex(vehindex) #update for vehicles with no record
     ret['nRIDES'] = df[df.event == driverEvent.ARRIVES_AT_DROPOFF.name].groupby(
         ['veh']).size().reindex(ret.index)
@@ -33,8 +36,8 @@ def D2D_veh_exp(*args,**kwargs):
     ret['OUT'] = ~ret['OUT'].isnull()
     ret['DRIVING_TIME'] = ret.REJECTS_REQUEST + ret.IS_REJECTED_BY_TRAVELLER + ret.IS_ACCEPTED_BY_TRAVELLER + ret.DEPARTS_FROM_PICKUP + ret.CONTINUES_SHIFT
     ret['DRIVING_DIST'] = ret['DRIVING_TIME'] * (params.speeds.ride/1000)
-    ret['REVENUE'] = (ret.DEPARTS_FROM_PICKUP * (params.speeds.ride/1000) * params.fares.km).add(params.fares.base * ret.nRIDES) * (1-params.fares.commission)
-    ret['COST'] = ret['DRIVING_DIST'] * (params.drivers.fuel)
+    ret['REVENUE'] = (ret.DEPARTS_FROM_PICKUP * (params.speeds.ride/1000) * params.platforms.km_fare).add(params.platforms.base_fare * ret.nRIDES) * (1-params.platforms.comm_rate)
+    ret['COST'] = ret['DRIVING_DIST'] * (params.drivers.fuel_costs)
     ret['NET_INCOME'] = ret['REVENUE'] - ret['COST']
     ret = ret[['nRIDES','nREJECTED', 'DRIVING_TIME', 'DRIVING_DIST', 'REVENUE', 'COST', 'NET_INCOME', 'OUT']+[_.name for _ in driverEvent]].fillna(0) #nans become 0
     ret.index.name = 'veh'
@@ -51,9 +54,9 @@ def D2D_driver_out(*args, **kwargs):
     perc_income = veh.veh.expected_income
     if ~veh.veh.registered:
         return True
-    elif veh.sim.params.probabilistic:
-        util_d = veh.sim.params.drivers.particip.beta * perc_income
-        util_nd = veh.sim.params.drivers.particip.beta * veh.veh.res_wage
+    elif veh.sim.params.evol.drivers.particip.probabilistic:
+        util_d = veh.sim.params.evol.drivers.particip.beta * perc_income
+        util_nd = veh.sim.params.evol.drivers.particip.beta * veh.veh.res_wage
         prob_d_reg = math.exp(util_d) / (math.exp(util_d) + math.exp(util_nd))
         prob_d_all = prob_d_reg
 
@@ -87,8 +90,8 @@ def update_d2d_exp(*args, **kwargs):
     ret['exp_inc'] = sim.res[run_id].veh_exp.NET_INCOME.to_numpy()
     ret.loc[ret.out == True, 'exp_inc'] = np.nan
     ret['worked_days'] = worked_days.to_numpy()
-    experienced_driver = (ret.worked_days >= params.drivers.omega).astype(int)
-    kappa = (experienced_driver / params.drivers.omega + (1 - experienced_driver) / (ret.worked_days + 1)) * (1 - ret.out)
+    experienced_driver = (ret.worked_days >= params.evol.drivers.omega).astype(int)
+    kappa = (experienced_driver / params.evol.drivers.omega + (1 - experienced_driver) / (ret.worked_days + 1)) * (1 - ret.out)
     new_perc_inc = (1 - kappa) * ret.init_perc_inc + kappa * ret.exp_inc
     ret['new_perc_inc'] = new_perc_inc.to_numpy()
     ret.loc[(ret.registered == True) & (ret.out == True), 'new_perc_inc'] = ret.loc[(ret.registered == True) & (ret.out == True), 'init_perc_inc']
@@ -101,11 +104,11 @@ def D2D_stop_crit(*args, **kwargs):
     res = kwargs.get('d2d_res', None)
     params = kwargs.get('params', None)
 
-    if len(res) < params.min_it:
+    if len(res) < params.evol.min_it:
         return False
     else:
         ret = (res[len(res)-1].new_perc_inc - res[len(res)-1].init_perc_inc) / res[len(res)-1].init_perc_inc
-        if ret.abs().max() <= params.conv:
+        if ret.abs().max() <= params.evol.conv:
             return True
         else:
             return False
@@ -116,10 +119,10 @@ def platform_regist(inData, end_day, **kwargs):
     exp_reg_drivers = end_day.loc[end_day['registered'] == True]
     average_perc_income = exp_reg_drivers.new_perc_inc.mean()
 
-    samp = np.random.rand(params.nV) <= params.drivers.regist.samp   # Sample of drivers making registration choice
+    samp = np.random.rand(params.nV) <= params.evol.drivers.regist.samp   # Sample of drivers making registration choice
 
-    util_reg = params.drivers.regist.beta * average_perc_income
-    util_not_reg = params.drivers.regist.beta * (inData.vehicles.res_wage + params.drivers.regist.cost_comp)
+    util_reg = params.evol.drivers.regist.beta * average_perc_income
+    util_not_reg = params.evol.drivers.regist.beta * (inData.vehicles.res_wage + params.evol.drivers.regist.cost_comp)
     prob_regist = np.exp(util_reg) / (np.exp(util_reg) + np.exp(util_not_reg))
     regist_decision = (np.random.rand(params.nV) < prob_regist) & inData.vehicles.informed & samp
 
@@ -136,7 +139,7 @@ def word_of_mouth(inData, **kwargs):
     nV_inf = inData.vehicles.informed.sum()
     nV_uninf = params.nV - nV_inf
     if nV_uninf > 0:
-        exp_inf_day = (params.drivers.inform.beta * nV_inf * nV_uninf) / params.nV
+        exp_inf_day = (params.evol.drivers.inform.beta * nV_inf * nV_uninf) / params.nV
         prob_inf = exp_inf_day / nV_uninf
     else:
         prob_inf = 0
@@ -181,21 +184,11 @@ def generate_vehicles_d2d(_inData, _params=None):
     """
 
     vehs = generate_vehicles(_inData, _params.nV)
-
-    # vehs = list()
-    # for i in range(_params.nV + 1):
-    #     vehs.append(empty_series(inData_.vehicles, id=i))
-    #
-    # vehs = pd.concat(vehs, axis=1, keys=range(1, _params.nV + 1)).T
-    # vehs.event = driverEvent.STARTS_DAY
+    
     vehs.expected_income = float("NaN")
-    vehs['res_wage'] = np.random.normal(_params.drivers.res_wage.mean, _params.drivers.res_wage.std, _params.nV)
-    vehs['informed'] = (np.random.rand(_params.nV) < _params.drivers.inform.prob_start)
-    vehs['registered'] = (np.random.rand(_params.nV) < _params.drivers.regist.prob_start) & vehs.informed
-    vehs.loc[vehs.registered == True, "expected_income"] = _params.drivers.init_income
-    # vehs.platform = 0
-    # vehs.shift_start = 0
-    # vehs.shift_end = 60 * 60 * 24
-    # vehs.pos = vehs.pos.apply(lambda x: int(rand_node(inData_.nodes)))
+    vehs['res_wage'] = np.random.normal(_params.evol.drivers.res_wage.mean, _params.evol.drivers.res_wage.std, _params.nV)
+    vehs['informed'] = (np.random.rand(_params.nV) < _params.evol.drivers.inform.prob_start)
+    vehs['registered'] = (np.random.rand(_params.nV) < _params.evol.drivers.regist.prob_start) & vehs.informed
+    vehs.loc[vehs.registered == True, "expected_income"] = _params.evol.drivers.init_inc_ratio * _params.evol.drivers.res_wage.mean
 
     return vehs
