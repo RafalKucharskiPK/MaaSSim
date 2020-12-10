@@ -61,10 +61,7 @@ def simulate_parallel(config="../data/config/parallel.json", inData=None, params
     if len(inData.platforms) == 0:  # only if no platforms in input
         inData.platforms = initialize_df(inData.platforms)
         inData.platforms.loc[0] = empty_series(inData.platforms)
-        inData.platforms.km_fare = [1]
-        inData.platforms.base_fare = [0]
-        inData.platforms.comm_rate = [0.25]
-        inData.platforms.min_fare = [0]
+        inData.platforms.fare = [1]
         inData.vehicles.platform = 0
         inData.passengers.platforms = inData.passengers.apply(lambda x: [0], axis=1)
 
@@ -115,10 +112,7 @@ def simulate(config="data/config.json", inData=None, params=None, **kwargs):
     if len(inData.platforms) == 0:  # only if no platforms in input
         inData.platforms = initialize_df(inData.platforms)
         inData.platforms.loc[0] = empty_series(inData.platforms)
-        inData.platforms.km_fare = [1]
-        inData.platforms.base_fare = [0]
-        inData.platforms.comm_rate = [0.25]
-        inData.platforms.min_fare = [0]
+        inData.platforms.fare = [1]
 
     inData = prep_shared_rides(inData, params.shareability)  # prepare schedules
 
