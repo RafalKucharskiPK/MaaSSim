@@ -36,7 +36,7 @@ def D2D_veh_exp(*args,**kwargs):
     ret['OUT'] = ~ret['OUT'].isnull()
     ret['DRIVING_TIME'] = ret.REJECTS_REQUEST + ret.IS_REJECTED_BY_TRAVELLER + ret.IS_ACCEPTED_BY_TRAVELLER + ret.DEPARTS_FROM_PICKUP + ret.CONTINUES_SHIFT
     ret['DRIVING_DIST'] = ret['DRIVING_TIME'] * (params.speeds.ride/1000)
-    ret['REVENUE'] = (ret.DEPARTS_FROM_PICKUP * (params.speeds.ride/1000) * params.platforms.km_fare).add(params.platforms.base_fare * ret.nRIDES) * (1-params.platforms.comm_rate)
+    ret['REVENUE'] = (ret.DEPARTS_FROM_PICKUP * (params.speeds.ride/1000) * params.platforms.fare).add(params.platforms.base_fare * ret.nRIDES) * (1-params.platforms.comm_rate)
     ret['COST'] = ret['DRIVING_DIST'] * (params.drivers.fuel_costs)
     ret['NET_INCOME'] = ret['REVENUE'] - ret['COST']
     ret = ret[['nRIDES','nREJECTED', 'DRIVING_TIME', 'DRIVING_DIST', 'REVENUE', 'COST', 'NET_INCOME', 'OUT']+[_.name for _ in driverEvent]].fillna(0) #nans become 0
