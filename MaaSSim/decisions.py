@@ -226,7 +226,7 @@ def f_match(**kwargs):
                          'request': pax_request,
                          'wait_time': mintime,
                          'travel_time': ttrav,
-                         'fare': max(platform.platform.base_fare + platform.platform.km_fare * sim.pax[i].request.dist / 1000, platform.platform.min_fare)}  # make an offer
+                         'fare': platform.platform.fare * sim.pax[i].request.dist / 1000}  # make an offer
                 platform.offers[offer_id] = offer  # bookkeeping of offers made by platform
                 sim.pax[i].offers[platform.platform.name] = offer  # offer transferred to
             if veh.f_driver_decline(veh=veh):  # allow driver reject the request

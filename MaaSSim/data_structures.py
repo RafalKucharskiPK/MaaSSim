@@ -26,7 +26,7 @@ structures.platforms = pd.DataFrame(columns=['id',
                                              'km_fare',
                                              'base_fare',
                                              'comm_rate',
-                                             'min_fare',
+                                             'min_fare'
                                              'name',
                                              'batch_time']).set_index('id')
 
