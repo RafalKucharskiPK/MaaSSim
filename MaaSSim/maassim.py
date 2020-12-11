@@ -18,8 +18,7 @@ from pathlib import Path
 
 from MaaSSim.traveller import PassengerAgent, travellerEvent
 from MaaSSim.driver import VehicleAgent
-from MaaSSim.decisions import f_dummy_repos, dummy_False
-from decisions import f_match
+from MaaSSim.decisions import f_dummy_repos, dummy_False, f_match
 from MaaSSim.platform import PlatformAgent
 from MaaSSim.performance import kpi_pax, kpi_veh
 from MaaSSim.utils import initialize_df
