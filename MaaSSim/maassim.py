@@ -135,7 +135,7 @@ class Simulator:
         self.logger.info("-------------------\tSimulation over\t\t-------------------")
         if len(self.reqQ) >= 0:
             self.logger.info(f"queue of requests {len(self.reqQ)}")
-        if run_id==None:
+        if run_id is None:
             self.logger.warning(f"simulation time {round(self.sim_end - self.sim_start, 1)} s")
         else:
             self.logger.warning(f"day {run_id}: simulation time {round(self.sim_end - self.sim_start, 1)} s") 
@@ -155,7 +155,7 @@ class Simulator:
 
     def make_res(self, run_id):
         # called at the end of simulation
-        if run_id == None:
+        if run_id is None:
             if len(self.run_ids) > 0:
                 run_id = self.run_ids[-1] + 1
             else:
@@ -191,9 +191,9 @@ class Simulator:
             logger = logging.getLogger()
             logger.setLevel(level)
             return logging.getLogger(__name__)
-        else:
-            logger.setLevel(level)
-            return logger
+        
+        logger.setLevel(level)
+        return logger
 
     def print_now(self):
         return self.t0 + pd.Timedelta(self.env.now, 's')
