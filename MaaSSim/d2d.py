@@ -54,23 +54,13 @@ def D2D_driver_out(*args, **kwargs):
     perc_income = veh.veh.expected_income
     if ~veh.veh.registered:
         return True
-    elif veh.sim.params.evol.drivers.particip.probabilistic:
+    if veh.sim.params.evol.drivers.particip.probabilistic:
         util_d = veh.sim.params.evol.drivers.particip.beta * perc_income
         util_nd = veh.sim.params.evol.drivers.particip.beta * veh.veh.res_wage
         prob_d_reg = math.exp(util_d) / (math.exp(util_d) + math.exp(util_nd))
         prob_d_all = prob_d_reg
-
-        if prob_d_all < random.random():
-            #print('I go out because I expect to earn too litle today')
-            return True
-        else:
-            return False
-    else:
-        if perc_income < veh.veh.res_wage:
-            #print('I go out because I expect to earn too litle today')
-            return True
-        else:
-            return False
+        return bool(prob_d_all < random.random())
+    return bool(perc_income < veh.veh.res_wage)
 
 def update_d2d_exp(*args, **kwargs):
     "updating drivers' day experience (incl determination of new perceived income)"
@@ -88,13 +78,13 @@ def update_d2d_exp(*args, **kwargs):
     ret['out'] = sim.res[run_id].veh_exp.OUT.to_numpy()
     ret['init_perc_inc'] = sim.vehicles.expected_income.to_numpy()
     ret['exp_inc'] = sim.res[run_id].veh_exp.NET_INCOME.to_numpy()
-    ret.loc[ret.out == True, 'exp_inc'] = np.nan
+    ret.loc[ret.out, 'exp_inc'] = np.nan
     ret['worked_days'] = worked_days.to_numpy()
     experienced_driver = (ret.worked_days >= params.evol.drivers.omega).astype(int)
     kappa = (experienced_driver / params.evol.drivers.omega + (1 - experienced_driver) / (ret.worked_days + 1)) * (1 - ret.out)
     new_perc_inc = (1 - kappa) * ret.init_perc_inc + kappa * ret.exp_inc
     ret['new_perc_inc'] = new_perc_inc.to_numpy()
-    ret.loc[(ret.registered == True) & (ret.out == True), 'new_perc_inc'] = ret.loc[(ret.registered == True) & (ret.out == True), 'init_perc_inc']
+    ret.loc[(ret.registered) & (ret.out), 'new_perc_inc'] = ret.loc[(ret.registered) & (ret.out), 'init_perc_inc']
     ret = ret.set_index('veh')
 
     return  ret
@@ -106,17 +96,13 @@ def D2D_stop_crit(*args, **kwargs):
 
     if len(res) < params.evol.min_it:
         return False
-    else:
-        ret = (res[len(res)-1].new_perc_inc - res[len(res)-1].init_perc_inc) / res[len(res)-1].init_perc_inc
-        if ret.abs().max() <= params.evol.conv:
-            return True
-        else:
-            return False
+    ret = (res[len(res)-1].new_perc_inc - res[len(res)-1].init_perc_inc) / res[len(res)-1].init_perc_inc
+    return bool(ret.abs().max() <= params.evol.conv)
 
 def platform_regist(inData, end_day, **kwargs):
     "determine probability of registering at platform overnight for all unregistered drivers"
     params = kwargs.get('params', None)
-    exp_reg_drivers = end_day.loc[end_day['registered'] == True]
+    exp_reg_drivers = end_day.loc[end_day['registered']]
     average_perc_income = exp_reg_drivers.new_perc_inc.mean()
 
     samp = np.random.rand(params.nV) <= params.evol.drivers.regist.samp   # Sample of drivers making registration choice
@@ -129,7 +115,7 @@ def platform_regist(inData, end_day, **kwargs):
     prev_regist = inData.vehicles.registered.to_numpy()
     registered = (np.concatenate(([prev_regist],[regist_decision]),axis=0).transpose()).any(axis=1)
     regist_res = pd.DataFrame(data = {'registered': registered, 'expected_income': end_day.new_perc_inc})
-    regist_res.loc[((inData.vehicles.registered == False) & (regist_res.registered == True)), "expected_income"] = average_perc_income
+    regist_res.loc[((not inData.vehicles.registered) & (regist_res.registered)), "expected_income"] = average_perc_income
 
     return regist_res
 
@@ -189,6 +175,6 @@ def generate_vehicles_d2d(_inData, _params=None):
     vehs['res_wage'] = np.random.normal(_params.evol.drivers.res_wage.mean, _params.evol.drivers.res_wage.std, _params.nV)
     vehs['informed'] = (np.random.rand(_params.nV) < _params.evol.drivers.inform.prob_start)
     vehs['registered'] = (np.random.rand(_params.nV) < _params.evol.drivers.regist.prob_start) & vehs.informed
-    vehs.loc[vehs.registered == True, "expected_income"] = _params.evol.drivers.init_inc_ratio * _params.evol.drivers.res_wage.mean
+    vehs.loc[vehs.registered, "expected_income"] = _params.evol.drivers.init_inc_ratio * _params.evol.drivers.res_wage.mean
 
     return vehs
