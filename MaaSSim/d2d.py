@@ -115,7 +115,7 @@ def platform_regist(inData, end_day, **kwargs):
     prev_regist = inData.vehicles.registered.to_numpy()
     registered = (np.concatenate(([prev_regist],[regist_decision]),axis=0).transpose()).any(axis=1)
     regist_res = pd.DataFrame(data = {'registered': registered, 'expected_income': end_day.new_perc_inc})
-    regist_res.loc[((not inData.vehicles.registered) & (regist_res.registered)), "expected_income"] = average_perc_income
+    regist_res.loc[((inData.vehicles.registered is False) & (regist_res.registered)), "expected_income"] = average_perc_income
 
     return regist_res
 
