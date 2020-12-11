@@ -133,5 +133,3 @@ if __name__ == "__main__":
     from MaaSSim.utils import test_space
 
     simulate_parallel(search_space = test_space())
-
-    
