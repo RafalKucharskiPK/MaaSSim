@@ -62,17 +62,17 @@ def D2D_driver_out(*args, **kwargs):
         return bool(prob_d_all < random.random())
     return bool(perc_income < veh.veh.res_wage)
 
-def update_d2d_exp(*args, **kwargs):
-    "updating drivers' day experience (incl determination of new perceived income)"
+def update_d2d_drivers(*args, **kwargs):
+    "updating drivers' day experience and determination of new perceived income"
     sim = kwargs.get('sim',None)
     params = kwargs.get('params',None)
     run_id = len(sim.res)-1
-#     ret = dict()
     hist = pd.concat([~sim.res[_]['veh_exp'].OUT for _ in range(0,run_id+1)],axis=1,ignore_index=True)
     worked_days = hist.sum(axis=1)
 
     ret = pd.DataFrame()
     ret['veh'] = np.arange(1,params.nV+1)
+    ret['pos'] = sim.vehicles.pos.to_numpy()
     ret['informed'] = sim.vehicles.informed.to_numpy()
     ret['registered'] = sim.vehicles.registered.to_numpy()
     ret['out'] = sim.res[run_id].veh_exp.OUT.to_numpy()
@@ -83,11 +83,46 @@ def update_d2d_exp(*args, **kwargs):
     experienced_driver = (ret.worked_days >= params.evol.drivers.omega).astype(int)
     kappa = (experienced_driver / params.evol.drivers.omega + (1 - experienced_driver) / (ret.worked_days + 1)) * (1 - ret.out)
     new_perc_inc = (1 - kappa) * ret.init_perc_inc + kappa * ret.exp_inc
+    
     ret['new_perc_inc'] = new_perc_inc.to_numpy()
     ret.loc[(ret.registered) & (ret.out), 'new_perc_inc'] = ret.loc[(ret.registered) & (ret.out), 'init_perc_inc']
+    cols = list(ret.columns)
+    a, b = cols.index('new_perc_inc'), cols.index('worked_days')
+    cols[b], cols[a] = cols[a], cols[b]
+    ret = ret[cols]
     ret = ret.set_index('veh')
 
     return  ret
+
+
+def update_d2d_travellers(*args, **kwargs):
+    "updating travellers' experience"
+#     sim = kwargs.get('sim',None)
+#     params = kwargs.get('params',None)
+#     run_id = len(sim.res)-1
+#     hist = pd.concat([~sim.res[_]['veh_exp'].OUT for _ in range(0,run_id+1)],axis=1,ignore_index=True)
+#     worked_days = hist.sum(axis=1)
+
+#     ret = pd.DataFrame()
+#     ret['veh'] = np.arange(1,params.nV+1)
+#     ret['informed'] = sim.vehicles.informed.to_numpy()
+#     ret['registered'] = sim.vehicles.registered.to_numpy()
+#     ret['out'] = sim.res[run_id].veh_exp.OUT.to_numpy()
+#     ret['init_perc_inc'] = sim.vehicles.expected_income.to_numpy()
+#     ret['exp_inc'] = sim.res[run_id].veh_exp.NET_INCOME.to_numpy()
+#     ret.loc[ret.out, 'exp_inc'] = np.nan
+#     ret['worked_days'] = worked_days.to_numpy()
+#     experienced_driver = (ret.worked_days >= params.evol.drivers.omega).astype(int)
+#     kappa = (experienced_driver / params.evol.drivers.omega + (1 - experienced_driver) / (ret.worked_days + 1)) * (1 - ret.out)
+#     new_perc_inc = (1 - kappa) * ret.init_perc_inc + kappa * ret.exp_inc
+#     ret['new_perc_inc'] = new_perc_inc.to_numpy()
+#     ret.loc[(ret.registered) & (ret.out), 'new_perc_inc'] = ret.loc[(ret.registered) & (ret.out), 'init_perc_inc']
+#     ret = ret.set_index('veh')
+
+#     return  ret
+
+    return True
+
 
 def D2D_stop_crit(*args, **kwargs):
     "returns True if simulation will be stopped, False otherwise"
@@ -137,18 +172,18 @@ def word_of_mouth(inData, **kwargs):
 
     return res_inf
 
-def D2D_summary(d2d):
+def D2D_summary(drivers):
     "create day-to-day stats"
-    inform = pd.concat([d2d[i].informed for i in range(len(d2d))],axis=1)
-    inform.columns = list(range(len(d2d)))
-    regist = pd.concat([d2d[i].registered for i in range(len(d2d))],axis=1)
-    regist.columns = list(range(len(d2d)))
-    ptcp = pd.concat([~d2d[i].out for i in range(0,len(d2d))],axis=1)
-    ptcp.columns = list(range(len(d2d)))
-    init_perc_inc = pd.concat([d2d[i].init_perc_inc for i in range(len(d2d))],axis=1)
-    init_perc_inc.columns = list(range(len(d2d)))
-    exp_inc = pd.concat([d2d[i].exp_inc for i in range(len(d2d))],axis=1)
-    exp_inc.columns = list(range(len(d2d)))
+    inform = pd.concat([drivers[i].informed for i in range(len(drivers))],axis=1)
+    inform.columns = list(range(len(drivers)))
+    regist = pd.concat([drivers[i].registered for i in range(len(drivers))],axis=1)
+    regist.columns = list(range(len(drivers)))
+    ptcp = pd.concat([~drivers[i].out for i in range(0,len(drivers))],axis=1)
+    ptcp.columns = list(range(len(drivers)))
+    init_perc_inc = pd.concat([drivers[i].init_perc_inc for i in range(len(drivers))],axis=1)
+    init_perc_inc.columns = list(range(len(drivers)))
+    exp_inc = pd.concat([drivers[i].exp_inc for i in range(len(drivers))],axis=1)
+    exp_inc.columns = list(range(len(drivers)))
     evol_micro = DotMap()
     evol_micro.inform = inform
     evol_micro.regist = regist
@@ -178,3 +213,18 @@ def generate_vehicles_d2d(_inData, _params=None):
     vehs.loc[vehs.registered, "expected_income"] = _params.evol.drivers.init_inc_ratio * _params.evol.drivers.res_wage.mean
 
     return vehs
+
+def pax_mode_choice(*args, **kwargs):
+    # returns boolean True if passenger decides not to use (private) ridesourcing for a given day (i.e. low quality offer)
+    traveller = kwargs.get('traveller',None)
+    sim = traveller.sim
+    
+    platform_id, offer = list(traveller.offers.items())[0]
+    delta = 0.5
+    
+    pass_walk_time = sim.skims.walk[traveller.pax.pos][traveller.request.origin]
+    veh_pickup_time = sim.skims.ride.T[sim.vehs[offer['veh_id']].veh.pos][traveller.request.origin]
+    pass_matching_time = sim.env.now - traveller.t_matching
+    tt = traveller.request.ttrav
+    
+    return (max(pass_walk_time, veh_pickup_time) + pass_matching_time) / tt.seconds > delta
