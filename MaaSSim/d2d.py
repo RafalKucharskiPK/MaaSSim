@@ -97,9 +97,29 @@ def update_d2d_drivers(*args, **kwargs):
 
 def update_d2d_travellers(*args, **kwargs):
     "updating travellers' experience"
-#     sim = kwargs.get('sim',None)
-#     params = kwargs.get('params',None)
-#     run_id = len(sim.res)-1
+    sim = kwargs.get('sim',None)
+    params = kwargs.get('params',None)
+    run_id = len(sim.res)-1
+    
+    ret = pd.DataFrame()
+    ret['pax'] = np.arange(1,params.nP+1)
+    ret['orig'] = sim.requests.origin.to_numpy()
+    ret['dest'] = sim.requests.destination.to_numpy()
+    ret['t_req'] = sim.requests.treq.to_numpy()
+    ret['tt_min'] = sim.requests.ttrav.to_numpy()
+    ret['dist'] = sim.requests.dist.to_numpy()
+    ret['informed'] = True
+    ret['no_request'] = sim.res[run_id].pax_exp['PREFERS_OTHER_SERVICE'].apply(lambda x: False if x == 0 else True).to_numpy()
+    ret['other_mode'] = sim.res[run_id].pax_exp['REJECTS_OFFER'].apply(lambda x: False if x == 0 else True).to_numpy()
+    ret['no_offer'] = sim.res[run_id].pax_exp['LOSES_PATIENCE'].apply(lambda x: False if x == 0 else True).to_numpy()
+    ret['xp_wait'] = sim.res[run_id].pax_exp.WAIT.to_numpy()
+    ret['xp_ivt'] = sim.res[run_id].pax_exp.TRAVEL.to_numpy()
+    ret['xp_ops'] = sim.res[run_id].pax_exp.OPERATIONS.to_numpy()
+    ret.loc[(ret.no_request == True)|(ret.other_mode == True), ['xp_wait','xp_ivt','xp_ops']] = np.nan
+    ret['xp_tt_total'] = ret.xp_wait + ret.xp_ivt + ret.xp_ops
+    ret['exp_tt_wait_prev'] = 0
+    ret = ret.set_index('pax')
+    
 #     hist = pd.concat([~sim.res[_]['veh_exp'].OUT for _ in range(0,run_id+1)],axis=1,ignore_index=True)
 #     worked_days = hist.sum(axis=1)
 
@@ -121,7 +141,7 @@ def update_d2d_travellers(*args, **kwargs):
 
 #     return  ret
 
-    return True
+    return ret
 
 
 def D2D_stop_crit(*args, **kwargs):
@@ -172,8 +192,14 @@ def word_of_mouth(inData, **kwargs):
 
     return res_inf
 
-def D2D_summary(drivers):
+def D2D_summary(**kwargs):
     "create day-to-day stats"
+    d2d = kwargs.get('d2d', None)
+    evol_micro = DotMap()
+    evol_agg = DotMap()
+    
+    # Supply
+    drivers = d2d.drivers
     inform = pd.concat([drivers[i].informed for i in range(len(drivers))],axis=1)
     inform.columns = list(range(len(drivers)))
     regist = pd.concat([drivers[i].registered for i in range(len(drivers))],axis=1)
@@ -184,16 +210,37 @@ def D2D_summary(drivers):
     init_perc_inc.columns = list(range(len(drivers)))
     exp_inc = pd.concat([drivers[i].exp_inc for i in range(len(drivers))],axis=1)
     exp_inc.columns = list(range(len(drivers)))
-    evol_micro = DotMap()
-    evol_micro.inform = inform
-    evol_micro.regist = regist
-    evol_micro.ptcp = ptcp
-    evol_micro.perc_inc = init_perc_inc
-    evol_micro.exp_inc = exp_inc
-    evol_stats = pd.DataFrame({'inform': evol_micro.inform.sum(), 'regist': evol_micro.regist.sum(), 'particip': evol_micro.ptcp.sum(), 'mean_perc_inc': evol_micro.perc_inc.mean(), 'mean_exp_inc': evol_micro.exp_inc.mean()})
-    evol_stats.index.name = 'day'
+    evol_micro.supply = DotMap()
+    evol_micro.supply.inform = inform
+    evol_micro.supply.regist = regist
+    evol_micro.supply.ptcp = ptcp
+    evol_micro.supply.perc_inc = init_perc_inc
+    evol_micro.supply.exp_inc = exp_inc
+    evol_agg.supply = pd.DataFrame({'inform': evol_micro.supply.inform.sum(), 'regist': evol_micro.supply.regist.sum(), 'particip': evol_micro.supply.ptcp.sum(), 'mean_perc_inc': evol_micro.supply.perc_inc.mean(), 'mean_exp_inc': evol_micro.supply.exp_inc.mean()})
+    evol_agg.supply.index.name = 'day'
 
-    return evol_micro, evol_stats
+    # Demand
+    travs = d2d.travs
+    inform = pd.concat([travs[i].informed for i in range(len(travs))],axis=1)
+    inform.columns = list(range(len(travs)))
+    request = pd.concat([~travs[i].no_request for i in range(len(travs))],axis=1)
+    request.columns = list(range(len(travs)))
+    gets_offer = pd.concat([~travs[i].no_offer for i in range(len(travs))],axis=1)
+    gets_offer.columns = list(range(len(travs)))
+    accepts_offer = pd.concat([~travs[i].other_mode for i in range(len(travs))],axis=1)
+    accepts_offer.columns = list(range(len(travs)))
+    wait_time = pd.concat([travs[i].xp_wait for i in range(len(travs))],axis=1)
+    wait_time.columns = list(range(len(travs)))
+    evol_micro.demand = DotMap()
+    evol_micro.demand.inform = inform
+    evol_micro.demand.request = request
+    evol_micro.demand.gets_offer = gets_offer
+    evol_micro.demand.accepts_offer = accepts_offer
+    evol_micro.demand.wait_time = wait_time
+    evol_agg.demand = pd.DataFrame({'inform': evol_micro.demand.inform.sum(), 'requests': evol_micro.demand.request.sum(), 'gets_offer': evol_micro.demand.gets_offer.sum(), 'accepts_offer': evol_micro.demand.accepts_offer.sum(), 'mean_wait': evol_micro.demand.wait_time.mean()})
+    evol_agg.demand.index.name = 'day'
+    
+    return evol_micro, evol_agg
 
 def generate_vehicles_d2d(_inData, _params=None):
     """
