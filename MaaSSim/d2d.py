@@ -109,13 +109,13 @@ def update_d2d_travellers(*args, **kwargs):
     ret['tt_min'] = sim.requests.ttrav.to_numpy()
     ret['dist'] = sim.requests.dist.to_numpy()
     ret['informed'] = True
-    ret['no_request'] = sim.res[run_id].pax_exp['PREFERS_OTHER_SERVICE'].apply(lambda x: False if x == 0 else True).to_numpy()
-    ret['other_mode'] = sim.res[run_id].pax_exp['REJECTS_OFFER'].apply(lambda x: False if x == 0 else True).to_numpy()
-    ret['no_offer'] = sim.res[run_id].pax_exp['LOSES_PATIENCE'].apply(lambda x: False if x == 0 else True).to_numpy()
+    ret['requests'] = sim.res[run_id].pax_exp['PREFERS_OTHER_SERVICE'].apply(lambda x: True if x == 0 else False).to_numpy()
+    ret['gets_offer'] = (sim.res[run_id].pax_exp['LOSES_PATIENCE'].apply(lambda x: True if x == 0 else False) & ret['requests']).to_numpy()
+    ret['accepts_offer'] = (sim.res[run_id].pax_exp['REJECTS_OFFER'].apply(lambda x: True if x == 0 else False) & ret['gets_offer']).to_numpy()
     ret['xp_wait'] = sim.res[run_id].pax_exp.WAIT.to_numpy()
     ret['xp_ivt'] = sim.res[run_id].pax_exp.TRAVEL.to_numpy()
     ret['xp_ops'] = sim.res[run_id].pax_exp.OPERATIONS.to_numpy()
-    ret.loc[(ret.no_request == True)|(ret.other_mode == True), ['xp_wait','xp_ivt','xp_ops']] = np.nan
+    ret.loc[(ret.requests == False)|(ret.gets_offer == False)|(ret.accepts_offer == False), ['xp_wait','xp_ivt','xp_ops']] = np.nan
     ret['xp_tt_total'] = ret.xp_wait + ret.xp_ivt + ret.xp_ops
     ret['exp_tt_wait_prev'] = 0
     ret = ret.set_index('pax')
@@ -223,21 +223,21 @@ def D2D_summary(**kwargs):
     travs = d2d.travs
     inform = pd.concat([travs[i].informed for i in range(len(travs))],axis=1)
     inform.columns = list(range(len(travs)))
-    request = pd.concat([~travs[i].no_request for i in range(len(travs))],axis=1)
-    request.columns = list(range(len(travs)))
-    gets_offer = pd.concat([~travs[i].no_offer for i in range(len(travs))],axis=1)
+    requests = pd.concat([travs[i].requests for i in range(len(travs))],axis=1)
+    requests.columns = list(range(len(travs)))
+    gets_offer = pd.concat([travs[i].gets_offer for i in range(len(travs))],axis=1)
     gets_offer.columns = list(range(len(travs)))
-    accepts_offer = pd.concat([~travs[i].other_mode for i in range(len(travs))],axis=1)
+    accepts_offer = pd.concat([travs[i].accepts_offer for i in range(len(travs))],axis=1)
     accepts_offer.columns = list(range(len(travs)))
     wait_time = pd.concat([travs[i].xp_wait for i in range(len(travs))],axis=1)
     wait_time.columns = list(range(len(travs)))
     evol_micro.demand = DotMap()
     evol_micro.demand.inform = inform
-    evol_micro.demand.request = request
+    evol_micro.demand.requests = requests
     evol_micro.demand.gets_offer = gets_offer
     evol_micro.demand.accepts_offer = accepts_offer
     evol_micro.demand.wait_time = wait_time
-    evol_agg.demand = pd.DataFrame({'inform': evol_micro.demand.inform.sum(), 'requests': evol_micro.demand.request.sum(), 'gets_offer': evol_micro.demand.gets_offer.sum(), 'accepts_offer': evol_micro.demand.accepts_offer.sum(), 'mean_wait': evol_micro.demand.wait_time.mean()})
+    evol_agg.demand = pd.DataFrame({'inform': evol_micro.demand.inform.sum(), 'requests': evol_micro.demand.requests.sum(), 'gets_offer': evol_micro.demand.gets_offer.sum(), 'accepts_offer': evol_micro.demand.accepts_offer.sum(), 'mean_wait': evol_micro.demand.wait_time.mean()})
     evol_agg.demand.index.name = 'day'
     
     return evol_micro, evol_agg
