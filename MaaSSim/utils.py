@@ -115,14 +115,14 @@ def load_G(_inData, _params=None, stats=True, set_t=True):
 def download_G(inData, _params, make_skims=True):
     # uses osmnx to download the graph
     print('Downloading network for {} witn osmnx'.format(_params.city))
-    inData.G = ox.graph_from_place(_params.city, network_type='drive')
+    full_graph = ox.graph_from_place(_params.city, network_type='drive')
+    inData.G = ox.utils_graph.get_largest_component(full_graph, strongly=True)
     inData.nodes = pd.DataFrame.from_dict(dict(inData.G.nodes(data=True)), orient='index')
     if make_skims:
         inData.skim_generator = nx.all_pairs_dijkstra_path_length(inData.G,
                                                                   weight='length')
         inData.skim_dict = dict(inData.skim_generator)  # filled dict is more usable
-        inData.skim = pd.DataFrame(inData.skim_dict).fillna(_params.dist_threshold).T.astype(
-            int)  # and dataframe is more intuitive
+        inData.skim = pd.DataFrame(inData.skim_dict).T.astype(int)  # and dataframe is more intuitive
 
     return inData
 
@@ -165,12 +165,11 @@ def generate_demand(_inData, _params=None, avg_speed=False):
 
     df = pd.DataFrame(index=np.arange(0, _params.nP), columns=_inData.passengers.columns)
     df.status = travellerEvent.STARTS_DAY
-    df.pos = _inData.nodes.sample(_params.nP).index  # df.pos = df.apply(lambda x: rand_node(_inData.nodes), axis=1)
+    df.pos = _inData.nodes.sample(_params.nP, replace=True).index
     _inData.passengers = df
     requests = pd.DataFrame(index=df.index, columns=_inData.requests.columns)
-    distances = _inData.skim[_inData.stats['center']].to_frame().dropna()  # compute distances from center
+    distances = _inData.skim.loc[_inData.stats['center']].to_frame().dropna()  # compute distances from center
     distances.columns = ['distance']
-    distances = distances[distances['distance'] < _params.dist_threshold]
     # apply negative exponential distributions
     distances['p_origin'] = distances['distance'].apply(lambda x:
                                                         math.exp(
@@ -194,13 +193,13 @@ def generate_demand(_inData, _params=None, avg_speed=False):
                                                  replace=True).index)  # sample destination nodes from a distribution
 
     requests['dist'] = requests.apply(lambda request: _inData.skim.loc[request.origin, request.destination], axis=1)
-    while len(requests[requests.dist >= _params.dist_threshold]) > 0:
+    while len(requests[requests.dist >= _params.dist_threshold_max]) + len(requests[requests.dist < _params.dist_threshold_min]) > 0:
         requests.origin = requests.apply(lambda request: (distances.sample(1, weights='p_origin').index[0]
-                                                          if request.dist >= _params.dist_threshold else
+                                                          if request.dist >= _params.dist_threshold_max or request.dist < _params.dist_threshold_min else
                                                           request.origin),
                                          axis=1)
         requests.destination = requests.apply(lambda request: (distances.sample(1, weights='p_destination').index[0]
-                                                               if request.dist >= _params.dist_threshold else
+                                                               if request.dist >= _params.dist_threshold_max or request.dist < _params.dist_threshold_min else
                                                                request.destination),
                                               axis=1)
         requests.dist = requests.apply(lambda request: _inData.skim.loc[request.origin, request.destination], axis=1)
@@ -279,7 +278,7 @@ def prep_supply_and_demand(_inData, params):
     _inData.platforms = initialize_df(_inData.platforms)
     _inData.platforms.loc[0] = [1, 'Platform', 1]
     return _inData
-
+    
 
 #################
 # PARALLEL RUNS #
