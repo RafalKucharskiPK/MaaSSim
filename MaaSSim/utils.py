@@ -163,7 +163,7 @@ def generate_demand(_inData, _params=None, avg_speed=False):
     except:
         pass
 
-    min_dist = params.get('dist_threshold_min',0)
+    min_dist = _params.get('dist_threshold_min',0)
     
     df = pd.DataFrame(index=np.arange(0, _params.nP), columns=_inData.passengers.columns)
     df.status = travellerEvent.STARTS_DAY
