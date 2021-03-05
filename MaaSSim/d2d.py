@@ -348,8 +348,9 @@ def pax_mode_choice(*args, **kwargs):
         U_pt = mcp.beta_access * mset.pt.access_time + mcp.beta_wait_pt * mset.pt.wait_time + mcp.beta_time_moto * pt_ivt + mcp.beta_cost * pt_fare + mcp.ASC_pt
         U_bike = mcp.beta_time_bike * bike_tt
         U_list = [U_rs, U_car, U_pt, U_bike]
+        exp_sum = np.exp(U_rs) + np.exp(U_car) + np.exp(U_pt) + np.exp(U_bike)
         
-        P_list = [np.exp(U_list[mode_id]) / (np.exp(U_rs) + np.exp(U_car) + np.exp(U_pt) + np.exp(U_bike)) for mode_id in range(len(U_list))]
+        P_list = [np.exp(U_list[mode_id]) / exp_sum for mode_id in range(len(U_list))]
         draw = np.cumsum(P_list) > random.random()
         decis = np.full((len(U_list)), False, dtype=bool)
         decis[np.argmax(draw)] = True
