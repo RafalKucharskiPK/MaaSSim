@@ -163,6 +163,8 @@ def generate_demand(_inData, _params=None, avg_speed=False):
     except:
         pass
 
+    min_dist = params.get('dist_threshold_min',0)
+    
     df = pd.DataFrame(index=np.arange(0, _params.nP), columns=_inData.passengers.columns)
     df.status = travellerEvent.STARTS_DAY
     df.pos = _inData.nodes.sample(_params.nP, replace=True).index
@@ -193,13 +195,13 @@ def generate_demand(_inData, _params=None, avg_speed=False):
                                                  replace=True).index)  # sample destination nodes from a distribution
 
     requests['dist'] = requests.apply(lambda request: _inData.skim.loc[request.origin, request.destination], axis=1)
-    while len(requests[requests.dist >= _params.dist_threshold_max]) + len(requests[requests.dist < _params.dist_threshold_min]) > 0:
+    while len(requests[requests.dist >= _params.dist_threshold]) + len(requests[requests.dist < min_dist]) > 0:
         requests.origin = requests.apply(lambda request: (distances.sample(1, weights='p_origin').index[0]
-                                                          if request.dist >= _params.dist_threshold_max or request.dist < _params.dist_threshold_min else
+                                                          if request.dist >= _params.dist_threshold or request.dist < min_dist else
                                                           request.origin),
                                          axis=1)
         requests.destination = requests.apply(lambda request: (distances.sample(1, weights='p_destination').index[0]
-                                                               if request.dist >= _params.dist_threshold_max or request.dist < _params.dist_threshold_min else
+                                                               if request.dist >= _params.dist_threshold or request.dist < min_dist else
                                                                request.destination),
                                               axis=1)
         requests.dist = requests.apply(lambda request: _inData.skim.loc[request.origin, request.destination], axis=1)
