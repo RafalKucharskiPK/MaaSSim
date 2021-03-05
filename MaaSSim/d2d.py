@@ -160,11 +160,11 @@ def update_d2d_travellers(*args, **kwargs):
     
     ret = pd.DataFrame()
     ret['pax'] = np.arange(1,params.nP+1)
-    ret['orig'] = sim.requests.origin.to_numpy()
-    ret['dest'] = sim.requests.destination.to_numpy()
-    ret['t_req'] = sim.requests.treq.to_numpy()
-    ret['tt_min'] = sim.requests.ttrav.to_numpy()
-    ret['dist'] = sim.requests.dist.to_numpy()
+    ret['orig'] = sim.inData.requests.origin.to_numpy()
+    ret['dest'] = sim.inData.requests.destination.to_numpy()
+    ret['t_req'] = sim.inData.requests.treq.to_numpy()
+    ret['tt_min'] = sim.inData.requests.ttrav.to_numpy()
+    ret['dist'] = sim.inData.requests.dist.to_numpy()
     ret['informed'] = sim.passengers.informed.to_numpy()
     ret['requests'] = ret.informed
     ret['gets_offer'] = (sim.res[run_id].pax_exp['LOSES_PATIENCE'].apply(lambda x: True if x == 0 else False) & ret['requests']).to_numpy()
