@@ -185,13 +185,13 @@ class PassengerAgent(object):
         """main routine of the passenger process,
         passes through the travellerEvent sequence in time and space"""
         self.update(event=travellerEvent.STARTS_DAY)
-        self.sim.requests.loc[len(self.sim.requests.index) + 1] = self.request  # append request
         if self.f_trav_out(pax=self):
             self.msg = 'decided not to travel with MaaS'
             self.update(event=travellerEvent.PREFERS_OTHER_SERVICE)
         else:
             did_i_opt_out = False
             if self.schedule_leader:  # single ride, or you are requesting a shared ride
+                self.sim.requests.loc[len(self.sim.requests.index) + 1] = self.request  # append request
                 yield self.sim.timeout((self.request.treq - self.sim.t0).seconds,
                                        variability=self.sim.vars.start)  # wait IDLE until the request time
                 # self.trip.request_node, self.trip.pickup_node= self.pax.pos, self.request.origin
