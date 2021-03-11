@@ -116,10 +116,10 @@ class Simulator:
         # generate passengers and vehicles as agents in the simulation (inData stays intact)
         for platform_id in self.platforms.index:
             self.plats[platform_id] = PlatformAgent(self, platform_id)
-        for pax_id in self.inData.passengers.index:
-            self.pax[pax_id] = PassengerAgent(self, pax_id)
         for veh_id in self.vehicles.index:
             self.vehs[veh_id] = VehicleAgent(self, veh_id)
+        for pax_id in self.inData.passengers.index:
+            self.pax[pax_id] = PassengerAgent(self, pax_id)
 
     #########
     #  RUN  #
@@ -231,6 +231,8 @@ class Simulator:
                 # unsuccesful trip
                 flag = False
                 if travellerEvent.LOSES_PATIENCE.name in trip.event.values:
+                    flag = True
+                elif travellerEvent.PREFERS_OTHER_SERVICE.name in trip.event.values:
                     flag = True
                 elif travellerEvent.IS_REJECTED_BY_VEHICLE.name in trip.event.values:
                     flag = True

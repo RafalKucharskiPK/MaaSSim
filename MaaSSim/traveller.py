@@ -191,9 +191,9 @@ class PassengerAgent(object):
         else:
             did_i_opt_out = False
             if self.schedule_leader:  # single ride, or you are requesting a shared ride
+                self.sim.requests.loc[len(self.sim.requests.index) + 1] = self.request  # append request
                 yield self.sim.timeout((self.request.treq - self.sim.t0).seconds,
                                        variability=self.sim.vars.start)  # wait IDLE until the request time
-                self.sim.requests.loc[len(self.sim.requests.index) + 1] = self.request  # append request
                 # self.trip.request_node, self.trip.pickup_node= self.pax.pos, self.request.origin
                 self.update(event=travellerEvent.REQUESTS_RIDE)
 
