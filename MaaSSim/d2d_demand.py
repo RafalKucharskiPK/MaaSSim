@@ -75,15 +75,19 @@ def update_d2d_travellers(*args, **kwargs):
 
 def d2d_no_request(*args, **kwargs):
     " returns True if traveller does not check ridesourcing offer, False if he does"
-    pax = kwargs.get('pax',None)
+    traveller = kwargs.get('pax',None)
+    sim = traveller.sim
+    params = sim.params
+    mcp = params.mode_choice
+    mset = params.alt_modes
 
-
-
-    rs_wait = sim.skims.ride.T[sim.vehs[offer['veh_id']].veh.pos][traveller.request.origin]
+    # Ridesourcing attributes
+    rs_wait = traveller.pax.expected_wait
     rs_ivt = traveller.request.ttrav.seconds
     rs_fare = max(params.platforms.base_fare + params.platforms.fare * rs_ivt * (params.speeds.ride / 1000),
                   params.platforms.min_fare)
 
+    # Attributes of alternative modes
     car_ivt = traveller.request.ttrav.seconds  # assumed same as RS
     car_cost = mset.car.km_cost * car_ivt * (params.speeds.ride / 1000)
     pt_ivt = traveller.request.ttrav.seconds  # assumed same as RS
@@ -92,6 +96,7 @@ def d2d_no_request(*args, **kwargs):
     bike_tt = sim.skims.ride.T[traveller.request.origin][traveller.request.destination] * (
                 params.speeds.ride / params.speeds.bike)
 
+    # Utilities
     U_rs = mcp.beta_wait_rs * rs_wait + mcp.beta_time_moto * rs_ivt + mcp.beta_cost * rs_fare + mcp.ASC_rs
     U_car = mcp.beta_access * mset.car.access_time + mcp.beta_time_moto * car_ivt + mcp.beta_cost * car_cost + mcp.ASC_car
     U_pt = mcp.beta_access * mset.pt.access_time + mcp.beta_wait_pt * mset.pt.wait_time + mcp.beta_time_moto * pt_ivt + mcp.beta_cost * pt_fare + mcp.ASC_pt
@@ -99,14 +104,14 @@ def d2d_no_request(*args, **kwargs):
     U_list = [U_rs, U_car, U_pt, U_bike]
     exp_sum = np.exp(U_rs) + np.exp(U_car) + np.exp(U_pt) + np.exp(U_bike)
 
+    # Decision
     P_list = [np.exp(U_list[mode_id]) / exp_sum for mode_id in range(len(U_list))]
     draw = np.cumsum(P_list) > random.random()
     decis = np.full((len(U_list)), False, dtype=bool)
     decis[np.argmax(draw)] = True
+    trav_out = not decis[0] or not traveller.pax.informed
 
-    other_mode = not decis[0]
-
-    return not pax.pax.informed
+    return trav_out
 
 def wom_trav(inData, **kwargs):
     "determine which travellers are informed before the start of the new day"
@@ -133,7 +138,6 @@ def pax_mode_choice(*args, **kwargs):
     params = sim.params
     mcp = params.mode_choice
     mset = params.alt_modes
-    mode_choice = kwargs.get('mode_choice', True)
 
     platform_id, offer = list(traveller.offers.items())[0]
 
