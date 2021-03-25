@@ -22,6 +22,11 @@ def D2D_kpi_pax(*args ,**kwargs):
     ret.columns.name = None
     ret = ret.reindex(paxindex)  # update for vehicles with no record
 
+    if 'PREFERS_OTHER_SERVICE' in ret.columns:
+        ret['NO_REQUEST'] = ~ret.PREFERS_OTHER_SERVICE.isna()
+    else:
+        ret['NO_REQUEST'] = False
+
     if 'REJECTS_OFFER' in ret.columns:
         ret['OTHER_MODE'] = ~ret.REJECTS_OFFER.isna()
     else:
@@ -58,9 +63,9 @@ def update_d2d_travellers(*args, **kwargs):
     ret['tt_min'] = sim.inData.requests.ttrav.to_numpy()
     ret['dist'] = sim.inData.requests.dist.to_numpy()
     ret['informed'] = sim.passengers.informed.to_numpy()
-    ret['requests'] = ret.informed
-    ret['gets_offer'] = (sim.res[run_id].pax_exp['LOSES_PATIENCE'].apply(lambda x: True if x == 0 else False) & ret[
-        'requests']).to_numpy()
+    ret['requests'] = ~sim.res[run_id].pax_exp['NO_REQUEST']
+    ret['gets_offer'] = (sim.res[run_id].pax_exp['LOSES_PATIENCE'].apply(lambda x: True if x == 0 else False)
+                         & ret['requests']).to_numpy()
     ret['accepts_offer'] = ~sim.res[run_id].pax_exp['OTHER_MODE'] & ret['gets_offer']
     ret['xp_wait'] = sim.res[run_id].pax_exp.WAIT.to_numpy()
     ret['xp_ivt'] = sim.res[run_id].pax_exp.TRAVEL.to_numpy()
