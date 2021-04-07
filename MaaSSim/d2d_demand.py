@@ -52,10 +52,12 @@ def d2d_kpi_pax(*args ,**kwargs):
 
 
 def update_d2d_travellers(*args, **kwargs):
-    "updating travellers' experience"
+    "updating travellers' experience and updating new expected waiting time"
     sim = kwargs.get('sim', None)
     params = kwargs.get('params', None)
     run_id = len(sim.res) - 1
+    hist = pd.concat([~sim.res[_]['pax_exp'].NO_REQUEST for _ in range(0, run_id + 1)], axis=1, ignore_index=True)
+    days_with_exp = hist.sum(axis=1)
 
     ret = pd.DataFrame()
     ret['pax'] = np.arange(1, params.nP + 1)
@@ -75,7 +77,21 @@ def update_d2d_travellers(*args, **kwargs):
     ret.loc[(ret.requests == False) | (ret.gets_offer == False) | (ret.accepts_offer == False), ['xp_wait', 'xp_ivt',
                                                                                                  'xp_ops']] = np.nan
     ret['xp_tt_total'] = ret.xp_wait + ret.xp_ivt + ret.xp_ops
-    ret['exp_tt_wait_prev'] = 0
+
+    ret['init_perc_wait'] = sim.passengers.expected_wait.to_numpy()
+    ret['experience'] = days_with_exp.to_numpy()
+    experienced_trav = (ret.experience >= params.evol.travellers.omega).astype(int)
+    kappa = (experienced_trav / params.evol.travellers.omega + (1 - experienced_trav) / (ret.experience + 1)) * ret.requests.astype(int)
+    ret['corr_xp_wait'] = ret.xp_wait.copy()
+    ret.loc[(ret.requests & (~ret.gets_offer)),['corr_xp_wait']] = params.evol.travellers.reject_penalty
+    new_perc_wait = (1 - kappa) * ret.init_perc_wait + kappa * ret.corr_xp_wait
+    ret['new_perc_wait'] = new_perc_wait.to_numpy()
+    ret.loc[ret.informed & (~ret.requests), 'new_perc_wait'] = ret.loc[ret.informed & (~ret.requests), 'init_perc_wait']
+
+    cols = list(ret.columns)
+    a, b = cols.index('new_perc_wait'), cols.index('experience')
+    cols[b], cols[a] = cols[a], cols[b]
+    ret = ret[cols]
     ret = ret.set_index('pax')
 
     return ret

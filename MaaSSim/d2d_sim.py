@@ -43,16 +43,19 @@ def D2D_summary(**kwargs):
     accepts_offer.columns = list(range(len(travs)))
     wait_time = pd.concat([travs[i].xp_wait for i in range(len(travs))], axis=1)
     wait_time.columns = list(range(len(travs)))
+    perc_wait = pd.concat([travs[i].init_perc_wait for i in range(len(travs))], axis=1)
+    perc_wait.columns = list(range(len(travs)))
     evol_micro.demand = DotMap()
     evol_micro.demand.inform = inform
     evol_micro.demand.requests = requests
     evol_micro.demand.gets_offer = gets_offer
     evol_micro.demand.accepts_offer = accepts_offer
     evol_micro.demand.wait_time = wait_time
+    evol_micro.demand.perc_wait = perc_wait
     evol_agg.demand = pd.DataFrame(
         {'inform': evol_micro.demand.inform.sum(), 'requests': evol_micro.demand.requests.sum(),
          'gets_offer': evol_micro.demand.gets_offer.sum(), 'accepts_offer': evol_micro.demand.accepts_offer.sum(),
-         'mean_wait': evol_micro.demand.wait_time.mean()})
+         'mean_wait': evol_micro.demand.wait_time.mean(), 'perc_wait': evol_micro.demand.perc_wait.mean()})
     evol_agg.demand.index.name = 'day'
 
     return evol_micro, evol_agg
