@@ -127,3 +127,10 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
+
+# idea
+.idea
+
+# Large input files
+data/graphs/Amsterdam.csv
+data/graphs/Amsterdam.graphml
