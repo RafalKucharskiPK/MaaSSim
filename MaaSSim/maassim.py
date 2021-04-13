@@ -1,5 +1,5 @@
 ################################################################################
-# Module: main.py
+# Module: main.py dwd
 # Description: Simulator object
 # Rafal Kucharski @ TU Delft, The Netherlands
 ################################################################################
