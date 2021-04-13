@@ -60,7 +60,7 @@ def update_d2d_travellers(*args, **kwargs):
     days_with_exp = hist.sum(axis=1)
 
     ret = pd.DataFrame()
-    ret['pax'] = np.arange(1, params.nP + 1)
+    ret['pax'] = np.arange(0, params.nP)
     ret['orig'] = sim.inData.requests.origin.to_numpy()
     ret['dest'] = sim.inData.requests.destination.to_numpy()
     ret['t_req'] = sim.inData.requests.treq.to_numpy()
@@ -110,11 +110,12 @@ def d2d_no_request(*args, **kwargs):
 
     return trav_out
 
-def wom_trav(inData, **kwargs):
+def wom_trav(inData, end_day, **kwargs):
     "determine which travellers are informed before the start of the new day"
     params = kwargs.get('params', None)
     nP_inf = inData.passengers.informed.sum()
     nP_uninf = params.nP - nP_inf
+
     if nP_uninf > 0:
         exp_inf_day = (params.evol.travellers.inform.beta * nP_inf * nP_uninf) / params.nP
         prob_inf = exp_inf_day / nP_uninf
@@ -124,7 +125,8 @@ def wom_trav(inData, **kwargs):
     new_inf = np.random.rand(params.nP) < prob_inf
     prev_inf = inData.passengers.informed.to_numpy()
     informed = (np.concatenate(([prev_inf],[new_inf]),axis=0).transpose()).any(axis=1)
-    res_inf = pd.DataFrame(data = {'informed': informed}, index=np.arange(0,params.nP))
+    res_inf = pd.DataFrame(data = {'informed': informed, 'perc_wait': end_day.new_perc_wait}, index=np.arange(0,params.nP))
+    res_inf.loc[(res_inf.informed) & (~end_day.informed),'perc_wait'] = params.evol.travellers.inform.start_wait
 
     return res_inf
 
