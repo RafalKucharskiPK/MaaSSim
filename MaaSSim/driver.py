@@ -117,7 +117,6 @@ class VehicleAgent(object):
             return
         yield self.sim.timeout(self.veh.shift_start, variability=self.sim.vars.shift)  # wait until shift start
         self.update(event=driverEvent.OPENS_APP)  # in the system
-
         while True:
             # try:  # depreciated since now traveller rejects instantly for simplicity
             repos = self.f_driver_repos(veh=self)  # reposition yourself

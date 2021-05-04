@@ -6,26 +6,7 @@ import math
 import random
 
 # Generation
-def generate_vehicles_d2d(_inData, _params=None):
-    """
-    generates vehicle database
-    index is consecutive number if dataframe
-    registered whether drivers have already made sign up decision
-    position is random graph node
-    event is set to STARTS_DAY
-    """
 
-    vehs = generate_vehicles(_inData, _params.nV)
-
-    vehs.expected_income = np.nan
-    vehs['res_wage'] = np.random.normal(_params.evol.drivers.res_wage.mean, _params.evol.drivers.res_wage.std,
-                                        _params.nV)
-    vehs['informed'] = (np.random.rand(_params.nV) < _params.evol.drivers.inform.prob_start)
-    vehs['registered'] = (np.random.rand(_params.nV) < _params.evol.drivers.regist.prob_start) & vehs.informed
-    vehs.loc[
-        vehs.registered, "expected_income"] = _params.evol.drivers.init_inc_ratio * _params.evol.drivers.res_wage.mean
-
-    return vehs
 
 # Evaluation
 def D2D_veh_exp(*args,**kwargs):
@@ -166,4 +147,4 @@ def D2D_driver_out(*args, **kwargs):
         prob_d_reg = math.exp(util_d) / (math.exp(util_d) + math.exp(util_nd))
         prob_d_all = prob_d_reg
         return bool(prob_d_all < random.random())
-    return bool(perc_income < veh.veh.res_wage)
+    #return bool(perc_income < veh.veh.res_wage)

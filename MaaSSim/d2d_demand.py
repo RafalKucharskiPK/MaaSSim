@@ -56,9 +56,9 @@ def update_d2d_travellers(*args, **kwargs):
     sim = kwargs.get('sim', None)
     params = kwargs.get('params', None)
     run_id = len(sim.res) - 1
-    hist = pd.concat([~sim.res[_]['pax_exp'].NO_REQUEST for _ in range(0, run_id + 1)], axis=1, ignore_index=True)
-    days_with_exp = hist.sum(axis=1)
 
+
+    # copy data on requests
     ret = pd.DataFrame()
     ret['pax'] = np.arange(0, params.nP)
     ret['orig'] = sim.inData.requests.origin.to_numpy()
@@ -66,26 +66,46 @@ def update_d2d_travellers(*args, **kwargs):
     ret['t_req'] = sim.inData.requests.treq.to_numpy()
     ret['tt_min'] = sim.inData.requests.ttrav.to_numpy()
     ret['dist'] = sim.inData.requests.dist.to_numpy()
-    ret['informed'] = sim.passengers.informed.to_numpy()
-    ret['requests'] = ~sim.res[run_id].pax_exp['NO_REQUEST']
+
+    #information from last simulation
+    ret['informed'] = sim.passengers.informed.to_numpy()  # was I informed?
+    ret['requests'] = ~sim.res[run_id].pax_exp['NO_REQUEST']  # did I requested a ride?
     ret['gets_offer'] = (sim.res[run_id].pax_exp['LOSES_PATIENCE'].apply(lambda x: True if x == 0 else False)
-                         & ret['requests']).to_numpy()
-    ret['accepts_offer'] = ~sim.res[run_id].pax_exp['OTHER_MODE'] & ret['gets_offer']
-    ret['xp_wait'] = sim.res[run_id].pax_exp.WAIT.to_numpy()
-    ret['xp_ivt'] = sim.res[run_id].pax_exp.TRAVEL.to_numpy()
-    ret['xp_ops'] = sim.res[run_id].pax_exp.OPERATIONS.to_numpy()
+                         & ret['requests']).to_numpy()  # did I receive offer?
+    ret['accepts_offer'] = ~sim.res[run_id].pax_exp['OTHER_MODE'] & ret['gets_offer']  # did I accept the offer?
+
+    # trip parameters
+    ret['xp_wait'] = sim.res[run_id].pax_exp.WAIT.to_numpy()  # waiting time
+    ret['xp_ivt'] = sim.res[run_id].pax_exp.TRAVEL.to_numpy()  # travel time
+    ret['xp_ops'] = sim.res[run_id].pax_exp.OPERATIONS.to_numpy()  # other times (entering, transactions)
+
+    # fill null experience with nan's
     ret.loc[(ret.requests == False) | (ret.gets_offer == False) | (ret.accepts_offer == False), ['xp_wait', 'xp_ivt',
                                                                                                  'xp_ops']] = np.nan
+    # sum the total travel time
     ret['xp_tt_total'] = ret.xp_wait + ret.xp_ivt + ret.xp_ops
 
+    # previous expectations
     ret['init_perc_wait'] = sim.passengers.expected_wait.to_numpy()
+
+    # how experienced I am
+    hist = pd.concat([~sim.res[_]['pax_exp'].NO_REQUEST for _ in range(0, run_id + 1)], axis=1, ignore_index=True)
+    days_with_exp = hist.sum(axis=1)
+
+    # number of days with experience
     ret['experience'] = days_with_exp.to_numpy()
+
+    # am I epxerienced traveller
     experienced_trav = (ret.experience >= params.evol.travellers.omega).astype(int)
+    # updating factor
     kappa = (experienced_trav / params.evol.travellers.omega + (1 - experienced_trav) / (ret.experience + 1)) * ret.requests.astype(int)
-    ret['corr_xp_wait'] = ret.xp_wait.copy()
-    ret.loc[(ret.requests & (~ret.gets_offer)),['corr_xp_wait']] = params.evol.travellers.reject_penalty
+    ret['corr_xp_wait'] = ret.xp_wait.copy()  # ?
+    # penalty due to rejection
+    ret.loc[(ret.requests & (~ret.gets_offer)), ['corr_xp_wait']] = params.evol.travellers.reject_penalty
+    # update and smooth
     new_perc_wait = (1 - kappa) * ret.init_perc_wait + kappa * ret.corr_xp_wait
     ret['new_perc_wait'] = new_perc_wait.to_numpy()
+    # replace
     ret.loc[ret.informed & (~ret.requests), 'new_perc_wait'] = ret.loc[ret.informed & (~ret.requests), 'init_perc_wait']
 
     cols = list(ret.columns)
@@ -104,6 +124,8 @@ def d2d_no_request(*args, **kwargs):
     params = sim.params
 
     rs_wait = traveller.pax.expected_wait
+
+
 
     rs_choice = mode_choice(traveller=traveller, rs_wait=rs_wait)
     trav_out = not rs_choice or not traveller.pax.informed
@@ -155,6 +177,7 @@ def mode_choice(**kwargs):
     rs_ivt = traveller.request.ttrav.seconds
     rs_fare = max(params.platforms.base_fare + params.platforms.fare * rs_ivt * (params.speeds.ride / 1000),
                   params.platforms.min_fare)
+
 
     # Attributes of alternative modes
     car_ivt = traveller.request.ttrav.seconds  # assumed same as RS

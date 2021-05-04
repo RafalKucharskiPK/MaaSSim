@@ -23,17 +23,22 @@ def prep_shared_rides(_inData, sp, _print=False):
     :return:
     """
 
-    sp.share = sp.get('share', 0)  # share of shareable rides
+    sp.share = sp.get('share', -1)  # share of shareable rides # if below zero use from the input
     requests = _inData.requests
 
-    if sp.shape == 0:
-        requests.shareable = False  # all requests are not shareable
-    elif sp.share == 1:
-        requests.shareable = True  # all requests are shareable
-    else:  # mixed - not fully tested, can be unstable
-        requests.shareable = requests.apply(lambda x:
-                                            False if random.random() >= sp.share
-                                            else True, axis=1)
+    if sp.share>=0:
+        if sp.shape == 0:
+            requests.shareable = False  # all requests are not shareable
+        elif sp.share == 1:
+            requests.shareable = True  # all requests are shareable
+        else:  # mixed - not fully tested, can be unstable
+            requests.shareable = requests.apply(lambda x:
+                                                False if random.random() >= sp.share
+                                                else True, axis=1)
+    else:
+        # use from input
+        pass
+
 
     if requests[requests.shareable].shape[0] == 0:  # no sharing
         _inData.requests['ride_id'] = _inData.requests.index.copy()  # rides are schedules, we do not share
@@ -54,6 +59,8 @@ def prep_shared_rides(_inData, sp, _print=False):
 
         schedule['req_id'] = schedule.apply(lambda s: [None] + s.indexes_orig + s.indexes_dest, axis=1)
 
+        r.position = r.apply(lambda row: row.position if row.shareable else 0, axis = 1) # make sure non shared rides have good position
+
         _inData.requests['ride_id'] = r.ride_id  # store ride index in requests for simulation
         _inData.requests['position'] = r.position  # store ride index in requests for simulation
         _inData.sblts.schedule['sim_schedule'] = _inData.sblts.schedule.apply(lambda x: make_schedule_shared(x), axis=1)
@@ -66,6 +73,7 @@ def prep_shared_rides(_inData, sp, _print=False):
         else:
             return _inData.sblts.schedule.loc[x.ride_id].sim_schedule
 
+    # used to populate agent schedule
     _inData.requests['sim_schedule'] = _inData.requests.apply(lambda x: set_sim_schedule(x), axis=1)
 
     _inData.schedules_queue = pd.DataFrame([[i, _inData.schedules[i].node[1]]
@@ -83,14 +91,15 @@ def make_schedule_nonshared(requests):
     """
     columns = ['node', 'time', 'req_id', 'od']
     degree = 2 * len(requests) + 1
-    df = pd.DataFrame(None, index=range(degree), columns=columns)
+    schedule = pd.DataFrame(None, index=range(degree), columns=columns)
     nodes = [None] + [r.origin for r in requests] + [r.destination for r in requests]
-    df.node = nodes
-    df.req_id = [None] + [r.name for r in requests] * 2
+    schedule.node = nodes
+    schedule.req_id = [None] + [r.name for r in requests] * 2
 
-    df.od = [None] + ['o'] * len(requests) + ['d'] * len(requests)
+    schedule.od = [None] + ['o'] * len(requests) + ['d'] * len(requests)
+    schedule.id = requests[0].name
 
-    return df
+    return schedule
 
 
 def make_schedule_shared(row):
@@ -109,5 +118,7 @@ def make_schedule_shared(row):
     schedule.node = nodes
 
     schedule.od = [None] + ['o'] * row.degree + ['d'] * row.degree
+
+    schedule.id = row.name
 
     return schedule

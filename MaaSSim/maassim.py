@@ -171,12 +171,22 @@ class Simulator:
         self.runs[run_id] = DotMap({'trips': trips, 'outcomes': outcomes, 'rides': rides, 'queues': queues})
 
     def output(self, run_id=None):
-        # called after the run for refined results
+        """
+        called after the run for refined results
+        populates 4 DataFrames: pax_exp, pax_kpi, veh_exp, veh_kpi.
+        Two for supply and two for demand.
+        Each with one per agent ("*_exp") and one aggregated ("*_kpi")
+        :param run_id:
+        :return:
+        """
+
         run_id = self.run_ids[-1] if run_id is None else run_id
+        # populates experience of passengers (individual and collective)
         ret = self.functions.kpi_pax(sim = self, run_id = run_id)
+        # populates experience of drivers (individual and collective)
         veh = self.functions.kpi_veh(sim = self, run_id = run_id)
         ret.update(veh)
-        self.res[run_id] = DotMap(ret)
+        self.res[run_id] = DotMap(ret) # stores the results
 
     #########
     # UTILS #
