@@ -4,30 +4,28 @@ import pandas as pd
 import statistics
 from MaaSSim.utils import generate_demand
 from MaaSSim.traveller import travellerEvent
+from dotmap import DotMap
 
 
 def generate_demand_coevolution(_inData, _params=None):
     """
-    generates vehicle database
-    index is consecutive number if dataframe
-    registered whether drivers have already made sign up decision
-    position is random graph node
-    event is set to STARTS_DAY
+    generates passengers DataFrame
+    index is consecutive number in dataframe
+    registered whether traveller have already made sign up decision
     """
 
-    inData = generate_demand(_inData, _params)
-
+    inData = generate_demand(_inData, _params, avg_speed=False)  # basic demand generation
     inData.passengers['informed'] = np.random.rand(_params.nP) < _params.evol.travellers.inform.prob_start
     inData.passengers['learned'] = False
-    inData.passengers['expected_wait_rs'] = _params.evol.travellers.inform.start_wait
+
+    # two pivot variables for learning
+    inData.passengers['expected_wait_rh'] = _params.evol.travellers.inform.start_wait
     inData.passengers['expected_wait_rp'] = _params.evol.travellers.inform.start_wait
-
-
 
     return inData
 
 
-def demand_kpi_coevolution(*args ,**kwargs):
+def demand_kpi_coevolution(*args, **kwargs):
     # calculate passenger indicators (global and individual)
 
     sim = kwargs.get('sim', None)
@@ -45,6 +43,7 @@ def demand_kpi_coevolution(*args ,**kwargs):
 
     ret.columns.name = None
     ret = ret.reindex(paxindex)  # update for vehicles with no record
+    ret['decision'] = sim.inData.passengers.travel_decision.values.copy()
 
     if 'PREFERS_OTHER_SERVICE' in ret.columns:
         ret['NO_REQUEST'] = ~ret.PREFERS_OTHER_SERVICE.isna()
@@ -69,20 +68,47 @@ def demand_kpi_coevolution(*args ,**kwargs):
         'MEETS_DRIVER_AT_PICKUP']  # time waiting for traveller (by default zero)
     ret['OPERATIONS'] = ret['ACCEPTS_OFFER'] + ret['DEPARTS_FROM_PICKUP'] + ret['SETS_OFF_FOR_DEST']
 
+    ret['TRAVEL_rh'] = ret.apply(lambda x: x['TRAVEL'] if x.decision == 'rh' else np.nan, axis = 1)
+    ret['TRAVEL_rp'] = ret.apply(lambda x: x['TRAVEL'] if x.decision == 'rp' else np.nan, axis = 1)
+    ret['WAIT_rh'] = ret.apply(lambda x: x['WAIT'] if x.decision == 'rh' else np.nan,axis=1)
+
+
+    def gwt_rp_wait(row):
+        if row.decision == 'rp':
+            pax = sim.pax[row.name]
+            if pax.request.shareable:
+                if pax.request.position == 0:
+                    return row.WAIT
+                else:
+                    leader = pax.request.sim_schedule.req_id.dropna().values[0]
+                    return ret.loc[leader].WAIT
+            else:
+                cos_nie_tak
+        else:
+            return np.nan
+
+    ret['WAIT_rp'] = ret.apply(gwt_rp_wait, axis=1)
+
+
+
+
+
     kpi = ret.agg(['sum', 'mean', 'std'])
     kpi['nP'] = ret.shape[0]
     return {'pax_exp': ret, 'pax_kpi': kpi}
 
 
-
-def set_fixed_utilities(inData, params):
+def set_fixed_utilities(sim):
+    inData = sim.inData
+    params = sim.params
     mcp = params.mode_choice
     mset = params.alt_modes
 
     inData.passengers['ivt_seconds'] = inData.passengers.apply(lambda x: inData.requests.loc[x.name].ttrav.seconds,
                                                                axis=1)
 
-    inData.passengers['expected_travel_time_rp'] = inData.passengers['ivt_seconds']
+
+    inData.passengers['expected_travel_rp'] = inData.passengers['ivt_seconds']
 
     def set_U_car(row):
         car_ivt = row.ivt_seconds  # assumed same as RS
@@ -114,29 +140,84 @@ def set_fixed_utilities(inData, params):
 
     inData.passengers['U_bike'] = inData.passengers.apply(set_U_bike, axis=1)
 
-    def set_rs_fare(row):
+    def set_rh_fare(row):
         rs_fare = max(
             params.platforms.base_fare + params.platforms.fare * row.ivt_seconds * (params.speeds.ride / 1000),
             params.platforms.min_fare)
         return rs_fare
 
     def set_rp_fare(row):
-        return row.rs_fare * (1- params.shareability.shared_discount)
+        return row.rh_fare * (1 - params.shareability.shared_discount)
 
-    inData.passengers['rs_fare'] = inData.passengers.apply(set_rs_fare, axis=1)
+    inData.passengers['rh_fare'] = inData.passengers.apply(set_rh_fare, axis=1)
     inData.passengers['rp_fare'] = inData.passengers.apply(set_rp_fare, axis=1)
-    inData.passengers['fixed_U_rs'] = inData.passengers.apply(lambda row: mcp.beta_time_moto * row.ivt_seconds +
-                                                                          mcp.beta_cost * row.rs_fare + mcp.ASC_rs,
+    inData.passengers['fixed_U_rh'] = inData.passengers.apply(lambda row: mcp.beta_time_moto * row.ivt_seconds +
+                                                                          mcp.beta_cost * row.rh_fare + mcp.ASC_rh,
                                                               axis=1)
 
-    inData.passengers['fixed_U_rp'] = inData.passengers.apply(lambda row: mcp.beta_cost * row.rp_fare + mcp.ASC_rs,
+    inData.passengers['fixed_U_rp'] = inData.passengers.apply(lambda row: mcp.beta_cost * row.rp_fare + mcp.ASC_rp,
                                                               axis=1)
 
     inData.passengers['exp_sum_fixed'] = inData.passengers.apply(
         lambda x: np.exp(x.U_car) + np.exp(x.U_pt) + np.exp(x.U_bike),
         axis=1)
 
-    return inData
+
+    return sim
+
+
+def update_utils(sim):
+
+    def decision(row):
+        return np.random.choice(['out','rh','rp'], 1, p=[row.prob_out, row.prob_rh, row.prob_rp])[0]
+
+    # updates probabilities with new attributes
+    params = sim.params
+    mcp = params.mode_choice
+
+
+    if len(sim.runs)==0:
+        pax_exp = sim.inData.passengers.copy() # we use defaults as expectations
+    else:
+        run_id = sim.run_ids[-1] # we use history as expectations
+        pax_exp = sim.res[run_id].pax_exp
+
+    # sim.inData.passengers['U_rh'] = sim.inData.passengers.apply(
+    #     lambda row: row.fixed_U_rh + mcp.beta_wait_rh * row.expected_wait_rh,
+    #     axis=1)
+    # sim.inData.passengers['U_rp'] = sim.inData.passengers.apply(
+    #     lambda row: row.fixed_U_rp +
+    #                 mcp.beta_wait_rh * row.expected_wait_rh +
+    #                 mcp.beta_time_moto * row.expected_travel_rp,
+    #     axis=1)
+    pax_exp['U_rh'] = pax_exp.apply(lambda row:
+                                    sim.inData.passengers.loc[row.name].fixed_U_rh +
+                                    mcp.beta_wait_rh * row.expected_wait_rh,
+                                    axis=1)
+    pax_exp['U_rp'] = pax_exp.apply(lambda row:
+                                    sim.inData.passengers.loc[row.name].fixed_U_rp +
+                                    mcp.beta_wait_rp * row.expected_wait_rp +
+                                    mcp.beta_time_moto * row.expected_travel_rp,
+                                    axis=1)
+
+    pax_exp['exp_sum'] = pax_exp.apply(lambda row:
+                                       sim.inData.passengers.loc[row.name].exp_sum_fixed +
+                                       np.exp(row.U_rh) +
+                                       np.exp(row.U_rp),
+                                       axis=1)
+
+    pax_exp['prob_rh'] = pax_exp.apply(lambda row: np.exp(row.U_rh) / row.exp_sum,axis=1)
+    pax_exp['prob_rp'] = pax_exp.apply(lambda row: np.exp(row.U_rp) / row.exp_sum, axis=1)
+    pax_exp['prob_out'] = 1 - pax_exp.prob_rh - pax_exp.prob_rp
+    pax_exp['travel_decision'] = pax_exp.apply(decision, axis = 1)
+
+    pax_exp['fare'] = pax_exp.apply(lambda x: sim.inData.passengers.loc[x.name].rh_fare if x.travel_decision == 'rh' else sim.inData.passengers.loc[x.name].rp_fare if x.travel_decision == 'rp' else 0, axis = 1)
+
+    sim.inData.passengers['travel_decision'] = pax_exp['travel_decision']
+
+    if len(sim.runs)==0:
+        sim.res[-1] =DotMap({'pax_exp': pax_exp})
+    return sim
 
 
 def travellers_learning(sim):
@@ -145,22 +226,65 @@ def travellers_learning(sim):
     params = sim.params
     pax = sim.inData.passengers
     run_id = sim.run_ids[-1]
-
-    hist = pd.concat([~sim.res[_]['pax_exp'].NO_REQUEST for _ in range(0, run_id + 1)], axis=1, ignore_index=True)
-
     pax_exp = sim.res[run_id].pax_exp
-    pax['days_with_exp'] = hist.sum(axis=1)
+
+    pax_exp['history'] = pax_exp.apply(lambda x: [sim.res[_].pax_exp.travel_decision[x.name] for _ in sim.run_ids[:-1]],
+                                       axis=1)
+    pax_exp['days_with_exp'] = pax_exp.apply(lambda x: len(x.history) - x.history.count('out'), axis=1)
+    pax_exp['days_with_rh'] = pax_exp.apply(lambda x: x.history.count('rh'), axis=1)
+    pax_exp['days_with_rp'] = pax_exp.apply(lambda x: x.history.count('rp'), axis=1)
+    pax_exp['days_out'] = pax_exp.apply(lambda x: x.history.count('out'), axis=1)
+
     pax['experienced'] = pax['days_with_exp'] > params.evol.travellers.window
 
-    def experience_window(row):
+    def experience_window_rh(row):
         pax_id = row.name
-        experience_window = list()
+        experience_window_rh = list()
         for i in range(1, run_id + 1):  # browse history from now backwards
             if ~sim.res[run_id - i].pax_exp.loc[pax_id].NO_REQUEST:  # did you request
-                experience_window.append(sim.res[run_id - i].pax_exp.loc[pax_id].expected_wait_rs)  # experienced wait
-            if len(experience_window) >= params.evol.travellers.window:  # collect only up to window #days
+                experience_window_rh.append(sim.res[run_id - i].pax_exp.loc[pax_id].expected_wait_rh)  # experienced wait
+            if len(experience_window_rh) >= params.evol.travellers.window:  # collect only up to window #days
                 break
-        return experience_window
+        return experience_window_rh
+
+    def experience_window_rp(row):
+        pax_id = row.name
+        experience_window_rp = list()
+        for i in range(1, run_id + 1):  # browse history from now backwards
+            if ~sim.res[run_id - i].pax_exp.loc[pax_id].NO_REQUEST:  # did you request
+                experience_window_rp.append(sim.res[run_id - i].pax_exp.loc[pax_id].expected_wait_rp)  # experienced wait
+            if len(experience_window_rp) >= params.evol.travellers.window:  # collect only up to window #days
+                break
+        return experience_window_rp
+
+    def learned_rh(row):
+        if run_id == 0:
+            return False  # first day
+        else:
+            if sim.res[run_id - 1].pax_exp.loc[row.name].learned_rh:  # you already learned
+                return True
+            elif row.decision == 'rh':
+                update = abs(sim.res[run_id - 1].pax_exp.loc[row.name].expected_wait_rh - row.expected_wait_rh) / row.expected_wait_rh
+                return update < sim.params.evol.travellers.stopping_criteria  # are they stable
+            else:
+                return False
+
+    def learned_rp(row):
+        if run_id == 0:
+            return False  # first day
+        else:
+            if sim.res[run_id - 1].pax_exp.loc[row.name].learned_rp:  # you already learned
+                return True
+            elif row.decision == 'rh':
+                update_wait = abs(sim.res[run_id - 1].pax_exp.loc[row.name].expected_wait_rp - row.expected_wait_rp) / row.expected_wait_rp
+                update_travel_time = abs(sim.res[run_id - 1].pax_exp.loc[
+                                      row.name].expected_travel_rp - row.expected_travel_rp) / row.expected_travel_rp
+
+                update = max(update_wait, update_travel_time)
+
+                return update < sim.params.evol.travellers.stopping_criteria  # are they stable
+            else:
+                return False
 
     def learned(row):
         if run_id == 0:
@@ -169,38 +293,31 @@ def travellers_learning(sim):
             if sim.res[run_id - 1].pax_exp.loc[row.name].learned:  # you already learned
                 return True
             else:
-                if len(row.experiences) < params.evol.travellers.window:  # if not enough experiences
+                if row.days_with_exp < params.evol.travellers.window:  # if not enough experiences
                     if run_id > 2 * params.evol.travellers.window:  # but many days have passed
-                        # if consistently out (only after two windows)
-                        last_days_out = [1 if sim.res[run_id - i].pax_exp.loc[row.name].NO_REQUEST else 0
-                                         for i in range(params.evol.travellers.window)]
-                        # see how many times you were out in the last window
-                        return sum(
-                            last_days_out) > 0.9 * params.evol.travellers.window  # if more than 70% of the window - you learned.
+                        return row.days_out > 0.9 * params.evol.travellers.window  # if more than 70% of the window - you learned.
                     else:
                         return False
                 else:
-                    # see how much we update the expectations
-                    update = abs(
-                        sim.res[run_id - 1].pax_exp.loc[row.name].expected_wait_rs - row.expected_wait_rs) / row.expected_wait_rs
-                    return update < sim.params.evol.travellers.stopping_criteria  # are they stable
+                    return row.learned_rh & row.learned_rp
 
-    def update_expected_wait(row):
+
+    def update_expected_wait_rh(row):
 
         # elif len(row.experiences) == 0: # still no memories
         #    return sim.res[run_id - 1].pax_exp.loc[row.name].expected_wait
-        if run_id > 0 and sim.res[run_id - 1].pax_exp.loc[row.name].learned:  # learning is over expectations are fixed
-            return sim.res[run_id - 1].pax_exp.loc[row.name].expected_wait_rs  # do not update
+        if run_id > 0 and sim.res[run_id - 1].pax_exp.loc[row.name].learned_rh:  # learning is over expectations are fixed
+            return sim.res[run_id - 1].pax_exp.loc[row.name].expected_wait_rh  # do not update
         elif sim.res[run_id].pax_exp.loc[row.name].NO_REQUEST:  # no experience from yesterday
             if run_id > 0:
-                return sim.res[run_id - 1].pax_exp.loc[row.name].expected_wait_rs  # do not update
+                return sim.res[run_id - 1].pax_exp.loc[row.name].expected_wait_rh  # do not update
             else:
-                return pax.loc[row.name].expected_wait_rs
+                return pax.loc[row.name].expected_wait_rh
         else:  # we update
-            old = row.experiences
+            old = row.experiences_rh
             if len(old) == 0:
                 kappa = 0.5
-                old = pax.loc[row.name].expected_wait_rs
+                old = pax.loc[row.name].expected_wait_rh
             else:
                 kappa = 1 / (len(old) + 1)
                 old = pd.Series(old).mean()
@@ -210,8 +327,41 @@ def travellers_learning(sim):
                 new_experience = sim.res[run_id].pax_exp.loc[row.name].WAIT
             return old * (1 - kappa) + kappa * new_experience
 
-    pax_exp['experiences'] = pax.apply(experience_window, axis=1)  # previous experiences
-    pax_exp['expected_wait_rs'] = pax_exp.apply(update_expected_wait, axis=1)
+
+    def update_expected_wait_rp(row):
+
+        # elif len(row.experiences) == 0: # still no memories
+        #    return sim.res[run_id - 1].pax_exp.loc[row.name].expected_wait
+        if run_id > 0 and sim.res[run_id - 1].pax_exp.loc[row.name].learned_rp:  # learning is over expectations are fixed
+            return sim.res[run_id - 1].pax_exp.loc[row.name].expected_wait_rp  # do not update
+        elif sim.res[run_id].pax_exp.loc[row.name].NO_REQUEST:  # no experience from yesterday
+            if run_id > 0:
+                return sim.res[run_id - 1].pax_exp.loc[row.name].expected_wait_rp  # do not update
+            else:
+                return pax.loc[row.name].expected_wait_rp
+        else:  # we update
+            old = row.experiences_rp
+            if len(old) == 0:
+                kappa = 0.5
+                old = pax.loc[row.name].expected_wait_rp
+            else:
+                kappa = 1 / (len(old) + 1)
+                old = pd.Series(old).mean()
+            if sim.res[run_id].pax_exp.loc[row.name].LOSES_PATIENCE > 0:  # were you served
+                new_experience = params.evol.travellers.reject_penalty  # bad experience
+            else:
+                new_experience = sim.res[run_id].pax_exp.loc[row.name].WAIT
+            return old * (1 - kappa) + kappa * new_experience
+
+    pax_exp['experiences_rh'] = pax.apply(experience_window_rh, axis=1)  # previous experiences
+    pax_exp['experiences_rp'] = pax.apply(experience_window_rp, axis=1)  # previous experiences
+    pax_exp['expected_wait_rh'] = pax_exp.apply(update_expected_wait_rh, axis=1)
+    pax_exp['expected_wait_rp'] = pax_exp.apply(update_expected_wait_rp, axis=1)
+
+    pax_exp['expected_travel_rp'] = pax['expected_travel_rp']
+
+    pax_exp['learned_rh'] = pax_exp.apply(learned_rh, axis=1)
+    pax_exp['learned_rp'] = pax_exp.apply(learned_rp, axis=1)
     pax_exp['learned'] = pax_exp.apply(learned, axis=1)
 
     sim.res[run_id].pax_exp = pax_exp
@@ -220,26 +370,7 @@ def travellers_learning(sim):
     return sim
 
 
-def update_utils(sim):
-    # updates probabilities with new attributes
-    params = sim.params
-    mcp = params.mode_choice
 
-    if len(sim.res) < 1:
-        sim.inData.passengers['U_rs'] = sim.inData.passengers.apply(
-            lambda row: row.fixed_U_rs + mcp.beta_wait_rs * row.expected_wait_rs,
-            axis=1)
-    else:
-        run_id = sim.run_ids[-1]
-        sim.inData.passengers['U_rs'] = sim.inData.passengers.apply(
-            lambda row: row.fixed_U_rs + mcp.beta_wait_rs * sim.res[run_id].pax_exp.loc[row.name].expected_wait_rs,
-            axis=1)
-
-    sim.inData.passengers['exp_sum'] = sim.inData.passengers.apply(lambda row: np.exp(row.U_rs) + row.exp_sum_fixed,
-                                                                   axis=1)
-    sim.inData.passengers['prob_rs'] = sim.inData.passengers.apply(lambda row: np.exp(row.U_rs) / row.exp_sum,
-                                                                   axis=1)
-    return sim
 
 
 def trav_out_d2d(**kwargs):
@@ -256,17 +387,21 @@ def stop_crit_demand(**kwargs):
     if run_id < 5:
         return False
     else:
-        conv = abs(sim.res[run_id].pax_exp.expected_wait_rs.mean().round(2) -
-                   sim.res[run_id - 1].pax_exp.expected_wait_rs.mean().round(2)) / \
-               sim.res[run_id].pax_exp.expected_wait_rs.mean().round(2)
-        sim.logger.critical("travellers learning \t day: {}\tlearned: {:.2f}\texp_wait: {:.2f}\tconv: {:.2f}".format(run_id,
-                                                                                              sim.res[
-                                                                                                  run_id].pax_exp.learned.sum() / sim.params.nP,
-                                                                                              sim.res[
-                                                                                                  run_id].pax_exp.expected_wait_rs.mean().round(
-                                                                                                  2),
-                                                                                              conv))
-        return conv < sim.params.evol.travellers.stopping_criteria \
+        conv_rh = abs(sim.res[run_id].pax_exp.expected_wait_rh.mean().round(2) -
+                   sim.res[run_id - 1].pax_exp.expected_wait_rh.mean().round(2)) / \
+               sim.res[run_id].pax_exp.expected_wait_rh.mean().round(2)
+        conv_rp = abs(sim.res[run_id].pax_exp.expected_wait_rp.mean().round(2) -
+                   sim.res[run_id - 1].pax_exp.expected_wait_rp.mean().round(2)) / \
+               sim.res[run_id].pax_exp.expected_wait_rp.mean().round(2)
+        sim.logger.critical(
+            "travellers learning \t day: {}\tlearned: {:.2f}\texp_wait: {:.2f}\tconv_rh: {:.2f}\tconv_rp: {:.2f}".format(run_id,
+                                                                                                     sim.res[
+                                                                                                         run_id].pax_exp.learned.sum() / sim.params.nP,
+                                                                                                     sim.res[
+                                                                                                         run_id].pax_exp.expected_wait_rp.mean().round(
+                                                                                                         2),
+                                                                                                     conv_rh, conv_rp))
+        return max(conv_rp,conv_rh) < sim.params.evol.travellers.stopping_criteria \
                and sim.res[run_id].pax_exp.learned.sum() > sim.params.evol.travellers.share_learned * sim.params.nP
 
 
