@@ -95,7 +95,7 @@ def pipeline(params=None, filename=None, **kwargs):
         sim = drivers_learning(sim=sim)
         sim.report[run_id] = {'day': run_id,
                               'n_trav': sim.res[run_id].pax_exp[~sim.res[run_id].pax_exp.NO_REQUEST].shape[0],
-                              'fare':  sim.res[run_id].pax_exp.fare.sum(),
+                              'fare':  sim.res[run_id-1].pax_exp.fare.sum() if run_id > 1 else 0,
                               'travel_decision': sim.res[run_id].pax_exp.groupby('travel_decision').size(),
                               'shareability': sim.inData.sblts.schedule.degree.mean(),
                               'mean_wait': sim.res[run_id].pax_exp[sim.res[run_id].pax_exp.TRAVEL > 0].WAIT.mean(),

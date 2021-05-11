@@ -215,8 +215,11 @@ def update_utils(sim):
                                     sim.inData.passengers.loc[x.name].rh_fare if x.travel_decision == 'rh' else
                                     sim.inData.passengers.loc[x.name].rp_fare if x.travel_decision == 'rp' else
                                     0, axis = 1)
+    if len(sim.runs)>0:
+        sim.res[run_id].pax_exp = pax_exp
 
     sim.inData.passengers['travel_decision'] = pax_exp['travel_decision']
+
 
     if len(sim.runs)==0:
         sim.res[-1] =DotMap({'pax_exp': pax_exp})
