@@ -1,7 +1,10 @@
 import logging
+import re
+
+from scipy.optimize import brute
 
 
-from MaaSSim.utils import get_config, load_G, prep_supply_and_demand, generate_demand, generate_vehicles, initialize_df  # simulator
+from MaaSSim.utils import get_config, load_G, slice_space, generate_demand, generate_vehicles, initialize_df  # simulator
 
 from MaaSSim.maassim import Simulator
 from MaaSSim.shared import prep_shared_rides
@@ -141,6 +144,62 @@ def pipeline(params = None, **kwargs):
 
 
     return sim
+
+
+
+def search_space():
+    # to see if code works
+    test_space = DotMap()
+    test_space.nP = [30, 40]  # number of requests per sim time
+    test_space.nV = [10, 20]  # number of requests per sim time
+    return test_space
+
+
+
+
+def simulate_parallel(config="../data/config/parallel.json", inData=None, params=None, search_space=None, **kwargs):
+
+    if params is None:
+        params = get_config(config)  # load from .json file
+
+
+    brute(func=parallel_runs,
+          ranges=slice_space(search_space, replications=params.parallel.get("nReplications",1)),
+          args=(inData, params, search_space),
+          full_output=True,
+          finish=None,
+          workers=params.parallel.get('nThread',1))
+
+
+def parallel_runs(one_slice, *args):
+    # function to be used with optimize brute
+    inData, params, search_space = args  # read static input
+    _inData = inData.copy()
+    _params = params.copy()
+    stamp = dict()
+    # parameterize
+    for i, key in enumerate(search_space.keys()):
+        val = search_space[key][int(one_slice[int(i)])]
+        stamp[key] = val
+        _params[key] = val
+
+    stamp['dt'] = str(pd.Timestamp.now()).replace('-','').replace('.','').replace(' ','')
+
+    filename = ''
+    for key, value in stamp.items():
+        filename += '-{}_{}'.format(key, value)
+    filename = re.sub('[^-a-zA-Z0-9_.() ]+', '', filename)
+    _inData.passengers = initialize_df(_inData.passengers)
+    _inData.requests = initialize_df(_inData.requests)
+    _inData.vehicles = initialize_df(_inData.vehicles)
+
+    sim = pipeline(inData=_inData, params=_params, logger_level=logging.WARNING)
+    sim.dump(dump_id=filename, path = _params.paths.get('dumps', None))  # store results
+
+    print(filename, pd.Timestamp.now(), 'end')
+    return 0
+
+
 
 
 if __name__ == "__main__":

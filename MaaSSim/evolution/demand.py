@@ -288,7 +288,7 @@ def travellers_learning(sim):
         else:
             if sim.res[run_id - 1].pax_exp.loc[row.name].learned_rp:  # you already learned
                 return True
-            elif row.travel_decision == 'rh':
+            elif row.travel_decision == 'rp':
                 update_wait = abs(sim.res[run_id - 1].pax_exp.loc[row.name].expected_wait_rp - row.expected_wait_rp) / row.expected_wait_rp
                 update_travel_time = abs(sim.res[run_id - 1].pax_exp.loc[
                                       row.name].expected_travel_rp - row.expected_travel_rp) / row.expected_travel_rp
