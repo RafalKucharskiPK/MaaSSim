@@ -42,6 +42,9 @@ class VehicleAgent(object):
         self.sim = simData  # reference to Simulator object
         self.id = veh_id  # unique vehicle id
         self.veh = self.sim.vehicles.loc[veh_id].copy()  # copy of inData vehicle data
+        # if we want to restart vehicles everyday from fixed locations
+        if self.sim.params.get('vehicle_fixed_positions', False):
+            self.veh.pos = self.sim.vehicle_fixed_positions.loc[self.id]
         self.platform_id = self.veh.platform  # id of a platform
         self.platform = self.sim.plats[self.platform_id]  # reference to the platform
 

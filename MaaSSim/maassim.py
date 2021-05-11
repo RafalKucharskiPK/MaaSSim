@@ -34,8 +34,7 @@ DEFAULTS = dict(f_match=f_match,
 
                 f_trav_out=dummy_False,
                 f_trav_mode=dummy_False,
-                f_platform_choice = dummy_False,
-
+                f_platform_choice=dummy_False,
 
                 f_stop_crit=dummy_False,
                 f_timeout=None,
@@ -68,11 +67,13 @@ class Simulator:
               'kpi_pax',
               'kpi_veh']
 
-
     def __init__(self, _inData, **kwargs):
         # input
         self.inData = _inData.copy()  # copy of data structure for simulations (copy needed for multi-threading)
         self.vehicles = self.inData.vehicles  # input
+        # if we want to restart vehicles everyday from fixed locations
+        self.vehicle_fixed_positions = pd.Series(self.inData.vehicles.pos.values.copy(),
+                                                 index=self.inData.vehicles.index.copy())
         self.platforms = self.inData.platforms  # input
         self.defaults = DEFAULTS.copy()  # default configuration of decision functions
 
@@ -138,7 +139,7 @@ class Simulator:
         if run_id is None:
             self.logger.warning(f"simulation time {round(self.sim_end - self.sim_start, 1)} s")
         else:
-            self.logger.warning(f"day {run_id}: simulation time {round(self.sim_end - self.sim_start, 1)} s") 
+            self.logger.warning(f"day {run_id}: simulation time {round(self.sim_end - self.sim_start, 1)} s")
         self.make_res(run_id)
         if self.params.get('assert_me', True):
             self.assert_me()  # test consistency of results
@@ -182,11 +183,11 @@ class Simulator:
 
         run_id = self.run_ids[-1] if run_id is None else run_id
         # populates experience of passengers (individual and collective)
-        ret = self.functions.kpi_pax(sim = self, run_id = run_id)
+        ret = self.functions.kpi_pax(sim=self, run_id=run_id)
         # populates experience of drivers (individual and collective)
-        veh = self.functions.kpi_veh(sim = self, run_id = run_id)
+        veh = self.functions.kpi_veh(sim=self, run_id=run_id)
         ret.update(veh)
-        self.res[run_id] = DotMap(ret) # stores the results
+        self.res[run_id] = DotMap(ret)  # stores the results
 
     #########
     # UTILS #
@@ -201,7 +202,7 @@ class Simulator:
             logger = logging.getLogger()
             logger.setLevel(level)
             return logging.getLogger(__name__)
-        
+
         logger.setLevel(level)
         return logger
 
@@ -233,7 +234,8 @@ class Simulator:
                         trip.pos == pos].t.to_list())) > 0  # were they at the same time at the same place?
                 if not self.vars.ride:
                     # check travel times
-                    length = int(nx.shortest_path_length(self.inData.G, o, d, weight='length') / self.params.speeds.ride)
+                    length = int(
+                        nx.shortest_path_length(self.inData.G, o, d, weight='length') / self.params.speeds.ride)
                     skim = self.skims.ride[o][d]
                     assert abs(skim - length) < 3
 
@@ -302,8 +304,10 @@ class Simulator:
         # uses distance skim in meters to populate 3 skims used in simulations
         self.skims = DotMap()
         self.skims.dist = self.inData.skim.copy()
-        self.skims.ride = self.skims.dist.divide(self.params.speeds.ride).astype(int).T  # <---- here we have travel time
-        self.skims.walk = self.skims.dist.divide(self.params.speeds.walk).astype(int).T  # <---- here we have travel time
+        self.skims.ride = self.skims.dist.divide(self.params.speeds.ride).astype(
+            int).T  # <---- here we have travel time
+        self.skims.walk = self.skims.dist.divide(self.params.speeds.walk).astype(
+            int).T  # <---- here we have travel time
 
     def timeout(self, n, variability=False):
         # overwrites sim timeout to add potential stochasticity
@@ -325,4 +329,4 @@ class Simulator:
 
     def plot_trip(self, pax_id, run_id=None):
         from MaaSSim.visualizations import plot_trip
-        plot_trip(self,pax_id, run_id = run_id)
+        plot_trip(self, pax_id, run_id=run_id)

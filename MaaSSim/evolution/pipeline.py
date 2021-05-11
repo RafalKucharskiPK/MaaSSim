@@ -1,11 +1,8 @@
-from MaaSSim.evolution.supply import stop_crit_supply
-from MaaSSim.evolution.demand import stop_crit_demand
 import logging
 
 
 from MaaSSim.utils import get_config, load_G, prep_supply_and_demand, generate_demand, generate_vehicles, initialize_df  # simulator
 
-from MaaSSim.simulators import simulate
 from MaaSSim.maassim import Simulator
 from MaaSSim.shared import prep_shared_rides
 import random
@@ -14,7 +11,8 @@ from MaaSSim.evolution.demand import *
 from MaaSSim.evolution.supply import *
 
 import pandas as pd
-from MaaSSim.data_structures import structures as inData
+
+EXPERIMENT_NAME = 'DEFAULT'
 
 
 def stop_crit_coevolution(**kwargs):
@@ -46,7 +44,7 @@ def pipeline(params = None, **kwargs):
 
     # generate simulation data
     inData.vehicles = generate_vehicles_coevolution(inData, params)
-    fixed_positions = inData.vehicles.pos.values.copy()
+    fixed_positions = pd.Series(inData.vehicles.pos.values.copy(), index = inData.vehicles.index.copy())
     inData.vehicles.platform = 1  # all vehicles serving the same platform (pooled in private ride-hailing)
     inData = generate_demand_coevolution(inData, params) # travel times a
     inData.platforms = pd.read_csv(params.paths.platforms, index_col=0)
@@ -79,6 +77,7 @@ def pipeline(params = None, **kwargs):
 
     sim.report = dict()
 
+
     for run_id in range(params.nD):
         sim = update_utils(sim)
 
@@ -109,11 +108,17 @@ def pipeline(params = None, **kwargs):
                        'mean_wait_rh': sim.res[run_id].pax_exp[sim.res[run_id].pax_exp.TRAVEL > 0].WAIT_rh.mean(),
                        'mean_wait_rp': sim.res[run_id].pax_exp[
                                   sim.res[run_id].pax_exp.TRAVEL > 0].WAIT_rp.mean(),
-                       'mean_exp': sim.res[run_id].pax_exp.expected_wait_rh.mean(),
-                       'n_exp': sim.inData.passengers[sim.inData.passengers.experienced].shape[0],
-                       'total exp': sim.inData.passengers.days_with_exp.sum(),
+                       'mean_exp_rh': sim.res[run_id].pax_exp.expected_wait_rh.mean(),
+                              'mean_exp_rp': sim.res[run_id].pax_exp.expected_wait_rp.mean(),
+                       'n_exp': sim.res[run_id].pax_exp[sim.res[run_id].pax_exp.experienced].shape[0],
+                       'total exp': sim.res[run_id].pax_exp.days_with_exp.sum(),
                        'mean_prob_rh': sim.res[run_id-1].pax_exp.prob_rh.mean() if run_id>0 else -1,
                        'mean_prob_rs': sim.res[run_id-1].pax_exp.prob_rp.mean() if run_id>0 else -1,
+                              'mean_exp_travel_rp': sim.res[run_id - 1].pax_exp.expected_travel_rp.mean() if run_id > 0 else -1,
+                              'learned_rh': sim.res[run_id - 1].pax_exp.learned_rh.sum() if run_id > 0 else 0,
+                              'learned_rp': sim.res[run_id - 1].pax_exp.learned_rp.sum() if run_id > 0 else 0,
+                              'learned': sim.res[run_id - 1].pax_exp.learned.sum() if run_id > 0 else 0,
+                              'learned_drivers': sim.res[run_id - 1].veh_exp.learned.sum() if run_id > 0 else 0,
                       'n_drivers': sim.res[run_id].veh_exp[~sim.res[run_id].veh_exp.OUT].shape[0],
                        'mean_income':sim.res[run_id].veh_exp[~sim.res[run_id].veh_exp.OUT].NET_INCOME.mean(),
                        'perc_income':sim.res[run_id].veh_exp[~sim.res[run_id].veh_exp.OUT].perc_income.mean()}
@@ -121,6 +126,20 @@ def pipeline(params = None, **kwargs):
 
         if stop_crit_coevolution(sim=sim):
             break
+
+    # dump results
+    for i in sim.run_ids:
+        sim.res[i].veh_exp['day'] = i
+        sim.res[i].pax_exp['day'] = i
+
+    df = pd.concat([sim.res[i].veh_exp for i in range(params.nD)])
+    df.to_csv('{}_veh_exp.csv'.format(EXPERIMENT_NAME))
+    df = pd.concat([sim.res[i].pax_exp for i in range(params.nD)])
+    df.to_csv('{}_pax_exp.csv'.format(EXPERIMENT_NAME))
+    sim.report = pd.DataFrame(sim.report).T
+    sim.report.to_csv('{}_report.csv'.format(EXPERIMENT_NAME))
+
+
     return sim
 
 
