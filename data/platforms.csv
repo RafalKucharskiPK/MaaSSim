@@ -1,0 +1,5 @@
+id,fare,name,batch_time
+-2,0.0,out,30
+-1,1.5,rh,30
+0,1.5,rp,30
+1,0.0,both,30
