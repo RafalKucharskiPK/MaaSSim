@@ -55,7 +55,7 @@ def supply_kpi_coevolution(*args, **kwargs):
     def get_revenues(veh):
         rides = sim.runs[run_id].rides[sim.runs[run_id].rides.veh == veh.name]
         paxes = list(set.union(*rides.paxes.apply(set).values))
-        return sim.res[run_id - 1].pax_exp.loc[paxes].fare.sum()
+        return sim.res[run_id - 1].pax_exp.loc[paxes].fare.sum()*(1-params.evol.comm_rate)
 
 
 
