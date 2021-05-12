@@ -57,6 +57,11 @@ def supply_kpi_coevolution(*args, **kwargs):
         paxes = list(set.union(*rides.paxes.apply(set).values))
         return sim.res[run_id - 1].pax_exp.loc[paxes].fare.sum()*(1-params.evol.comm_rate)
 
+    def get_commission(veh):
+        rides = sim.runs[run_id].rides[sim.runs[run_id].rides.veh == veh.name]
+        paxes = list(set.union(*rides.paxes.apply(set).values))
+        return sim.res[run_id - 1].pax_exp.loc[paxes].fare.sum()*(params.evol.comm_rate)
+
 
 
 
@@ -79,10 +84,11 @@ def supply_kpi_coevolution(*args, **kwargs):
     ret['DRIVING_TIME'] = ret.REJECTS_REQUEST + ret.IS_ACCEPTED_BY_TRAVELLER + ret.DEPARTS_FROM_PICKUP
     ret['DRIVING_DIST'] = ret['DRIVING_TIME'] * (params.speeds.ride / 1000)
     ret['REVENUE'] = ret.apply(get_revenues, axis = 1) #groupby(['veh'])['revenue'].sum().reindex(ret.index).fillna(0)
+    ret['COMMISSION'] = ret.apply(get_commission, axis=1)
     ret['COST'] = ret['DRIVING_DIST'] * (params.drivers.fuel_costs)
     ret['NET_INCOME'] = ret['REVENUE'] - ret['COST']
     ret = ret[
-        ['nRIDES', 'nREJECTED', 'DRIVING_TIME', 'DRIVING_DIST', 'REVENUE', 'COST', 'NET_INCOME', 'OUT'] + [_.name for _
+        ['nRIDES', 'nREJECTED', 'DRIVING_TIME', 'DRIVING_DIST', 'COMMISSION', 'REVENUE', 'COST', 'NET_INCOME', 'OUT'] + [_.name for _
                                                                                                            in
                                                                                                            driverEvent]]
     ret.index.name = 'veh'
@@ -205,12 +211,11 @@ def stop_crit_supply(**kwargs):
         conv = abs(sim.res[run_id].veh_exp.perc_income.mean().round(2) -
                    sim.res[run_id - 1].veh_exp.perc_income.mean().round(2)) / \
                sim.res[run_id].veh_exp.perc_income.mean().round(2)
-        sim.logger.critical("driver's learning \tday: {}\tlearned: {:.2f}\tperc_inc: {:.2f}\tconv: {:.2f}".format(run_id,
-                                                                                              sim.res[
-                                                                                                  run_id].veh_exp.learned.sum() / sim.params.nV,
-                                                                                              sim.res[
-                                                                                                  run_id].veh_exp.perc_income.mean().round(
-                                                                                                  2),
+        sim.logger.critical("driver's learning \tday:"
+                            " {}\tlearned: {:.2f}\tperc_inc: "
+                            "{:.2f}\tconv: {:.2f}".format(run_id,
+                                                          sim.res[run_id].veh_exp.learned.sum() / sim.params.nV,
+                                                          sim.res[run_id].veh_exp.perc_income.mean().round(2),
                                                                                               conv))
         return conv < sim.params.evol.drivers.stopping_criteria \
                and sim.res[run_id].veh_exp.learned.sum() > sim.params.evol.drivers.share_learned * sim.params.nV

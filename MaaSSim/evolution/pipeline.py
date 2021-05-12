@@ -93,34 +93,8 @@ def pipeline(params=None, filename=None, **kwargs):
         sim.output()  # calc results
         sim = travellers_learning(sim=sim)
         sim = drivers_learning(sim=sim)
-        sim.report[run_id] = {'day': run_id,
-                              'n_trav': sim.res[run_id].pax_exp[~sim.res[run_id].pax_exp.NO_REQUEST].shape[0],
-                              'fare':  sim.res[run_id-1].pax_exp.fare.sum() if run_id > 1 else 0,
-                              'travel_decision': sim.res[run_id].pax_exp.groupby('travel_decision').size(),
-                              'shareability': sim.inData.sblts.schedule.degree.mean(),
-                              'mean_wait': sim.res[run_id].pax_exp[sim.res[run_id].pax_exp.TRAVEL > 0].WAIT.mean(),
-                              'mean_wait_rh': sim.res[run_id].pax_exp[
-                                  sim.res[run_id].pax_exp.TRAVEL > 0].WAIT_rh.mean(),
-                              'mean_wait_rp': sim.res[run_id].pax_exp[
-                                  sim.res[run_id].pax_exp.TRAVEL > 0].WAIT_rp.mean(),
-                              'mean_exp_rh': sim.res[run_id].pax_exp.expected_wait_rh.mean(),
-                              'mean_exp_rp': sim.res[run_id].pax_exp.expected_wait_rp.mean(),
-                              'n_exp': sim.res[run_id].pax_exp[sim.res[run_id].pax_exp.experienced].shape[0],
-                              'total exp': sim.res[run_id].pax_exp.days_with_exp.sum(),
-                              'mean_prob_rh': sim.res[run_id - 1].pax_exp.prob_rh.mean() if run_id > 0 else -1,
-                              'mean_prob_rs': sim.res[run_id - 1].pax_exp.prob_rp.mean() if run_id > 0 else -1,
-                              'mean_exp_travel_rp': sim.res[
-                                  run_id - 1].pax_exp.expected_travel_rp.mean() if run_id > 0 else -1,
-                              'learned_rh': sim.res[run_id - 1].pax_exp.learned_rh.sum() if run_id > 0 else 0,
-                              'learned_rp': sim.res[run_id - 1].pax_exp.learned_rp.sum() if run_id > 0 else 0,
-                              'learned': sim.res[run_id - 1].pax_exp.learned.sum() if run_id > 0 else 0,
-                              'learned_drivers': sim.res[run_id - 1].veh_exp.learned.sum() if run_id > 0 else 0,
-                              'n_drivers': sim.res[run_id].veh_exp[~sim.res[run_id].veh_exp.OUT].shape[0],
-                              'mean_income': sim.res[run_id].veh_exp[~sim.res[run_id].veh_exp.OUT].NET_INCOME.mean(),
-                              'perc_income': sim.res[run_id].veh_exp[~sim.res[run_id].veh_exp.OUT].perc_income.mean(),
-                              'loses_patience':
-                                  sim.res[run_id].pax_exp[sim.res[run_id].pax_exp.LOSES_PATIENCE > 0].shape[0],
-                              }
+        sim.report[run_id] = day_report(sim, run_id)
+
         sim.logger.warn(sim.report[run_id])
 
         if stop_crit_coevolution(sim=sim):
@@ -141,6 +115,68 @@ def pipeline(params=None, filename=None, **kwargs):
 
     return sim
 
+
+def day_report(sim,run_id):
+    if run_id>1:
+        conv_rp = abs(sim.res[run_id-1].pax_exp.prob_rp.mean() - sim.res[run_id-2].pax_exp.prob_rp.mean()) / \
+               sim.res[run_id-2].pax_exp.prob_rp.mean()
+        conv_rh = abs(sim.res[run_id-1].pax_exp.prob_rh.mean() - sim.res[run_id - 2].pax_exp.prob_rh.mean()) / \
+                  sim.res[run_id - 2].pax_exp.prob_rp.mean()
+        conv_supply = abs(sim.res[run_id-1].veh_exp.prob_d.mean() - sim.res[run_id - 2].veh_exp.prob_d.mean()) / \
+                  sim.res[run_id-2].veh_exp.prob_d.mean()
+    else:
+        conv_rp, conv_rh, conv_supply = 0,0,0
+
+
+
+    day_report = {'day': run_id, # index
+                  # experimental input
+                  'nP': sim.params.nP,
+                  'nV': sim.params.nV,
+                  'comm_rate': sim.params.evol.comm_rate,
+                  'discount': sim.params.shareability.shared_discount,
+
+                  # travel decision results
+                  'travel_decisions': sim.res[run_id].pax_exp.groupby('travel_decision').size(),
+                  'n_trav': sim.res[run_id].pax_exp[~sim.res[run_id].pax_exp.NO_REQUEST].shape[0],
+                  'n_drivers': sim.res[run_id].veh_exp[~sim.res[run_id].veh_exp.OUT].shape[0],
+                  #profits
+                  'fare':  sim.res[run_id-1].pax_exp.fare.sum() if run_id > 1 else 0,
+                  'commision': sim.res[run_id - 1].veh_exp.COMMISSION.sum() if run_id > 1 else 0,
+                  'revenue': sim.res[run_id - 1].veh_exp.REVENUE.sum() if run_id > 1 else 0,
+                  'income':sim.res[run_id - 1].veh_exp.NET_INCOME.sum() if run_id > 1 else 0,
+                  #pivot variables - experience
+                  'mean_wait_rh': sim.res[run_id].pax_exp[
+                      sim.res[run_id].pax_exp.TRAVEL > 0].WAIT_rh.mean(),
+                  'mean_wait_rp': sim.res[run_id].pax_exp[
+                      sim.res[run_id].pax_exp.TRAVEL > 0].WAIT_rp.mean(),
+                  'mean_travel_rp': sim.res[run_id].pax_exp[
+                      sim.res[run_id].pax_exp.TRAVEL > 0].TRAVEL_rp.mean(),
+                  'mean_income': sim.res[run_id].veh_exp[~sim.res[run_id].veh_exp.OUT].NET_INCOME.mean(),
+                  #pivot variables - expected
+                  'mean_expected_wait_rh': sim.res[run_id].pax_exp.expected_wait_rh.mean(),
+                  'mean_expected_wait_rp': sim.res[run_id].pax_exp.expected_wait_rp.mean(),
+                  'mean_expected_travel_rp': sim.res[
+                      run_id - 1].pax_exp.expected_travel_rp.mean() if run_id > 0 else -1,
+                  'mean_expected_income': sim.res[run_id].veh_exp[~sim.res[run_id].veh_exp.OUT].perc_income.mean(),
+                  # probabilities
+                  'mean_prob_rh': sim.res[run_id - 1].pax_exp.prob_rh.mean() if run_id > 0 else -1,
+                  'mean_prob_rs': sim.res[run_id - 1].pax_exp.prob_rp.mean() if run_id > 0 else -1,
+                  # convergence
+                  'n_exp': sim.res[run_id].pax_exp[sim.res[run_id].pax_exp.experienced].shape[0],
+                  'learned_rh': sim.res[run_id - 1].pax_exp.learned_rh.sum() if run_id > 0 else 0,
+                  'learned_rp': sim.res[run_id - 1].pax_exp.learned_rp.sum() if run_id > 0 else 0,
+                  'learned': sim.res[run_id - 1].pax_exp.learned.sum() if run_id > 0 else 0,
+                  'learned_drivers': sim.res[run_id - 1].veh_exp.learned.sum() if run_id > 0 else 0,
+                  'conv_rp': conv_rp,
+                  'conv_rh': conv_rh,
+                  'conv_supply': conv_supply,
+                  # others
+                  'shareability': sim.inData.sblts.schedule.degree.mean(),
+                  'unserved':
+                      sim.res[run_id].pax_exp[sim.res[run_id].pax_exp.LOSES_PATIENCE > 0].shape[0],
+                  }
+    return day_report
 
 def evolution_search_space():
     # to see if code works
@@ -185,11 +221,13 @@ def parallel_runs(one_slice, *args):
     stamp['dt'] = str(pd.Timestamp.now()).replace('-', '').replace('.', '').replace(' ', '')
 
     filename = EXPERIMENT_NAME
+
     for key, value in stamp.items():
         filename += '-{}_{}'.format(key, value)
     filename = re.sub('[^-a-zA-Z0-9_.() ]+', '', filename)
 
-    pipeline(params=_params, name=filename)
+
+    pipeline(params=_params, filename=filename)
     # sim.dump(dump_id=filename, path = _params.paths.get('dumps', None))  # store results
 
     print(filename, pd.Timestamp.now(), 'end')
