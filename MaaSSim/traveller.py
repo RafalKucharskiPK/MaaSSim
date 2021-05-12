@@ -112,11 +112,10 @@ class PassengerAgent(object):
         self.schedule = self.request.sim_schedule  # schedule serving this requests
         self.schedule_id = self.request.sim_schedule.id  # schedule serving this requests
         self.schedule_leader = self.request.position == 0  # orded in pickups - if it is 0 , you will request the ride,
+        self.cotravellers = self.schedule.req_id.dropna().unique().tolist() # co travellers
+        self.cotravellers.remove(self.request.name)
 
-        if self.sim.params.get('debug', False):  # debugging test test
-            nodes = list(self.schedule.node.values)
-            if self.request.origin != self.request.destination:
-                assert nodes.index(self.request.origin) < nodes.index(self.request.destination)
+
 
         self.rides = list()  # report of this passenger process, populated while simulating
 
@@ -224,6 +223,9 @@ class PassengerAgent(object):
                                                                       self.sim.print_now()))
                     self.leave_queues()
                     self.msg = 'lost his patience and left the system'
+                    for i in self.cotravellers: # all his co travellers loose patience too
+                        self.sim.pax[i].update(event=travellerEvent.LOSES_PATIENCE)
+                        self.sim.pax[i].lost_shared_patience.succeed()
                 if len(self.offers) > 0:
                     yield self.found_veh
 

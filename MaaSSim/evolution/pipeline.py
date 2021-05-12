@@ -213,7 +213,7 @@ def parallel_runs(one_slice, *args):
         stamp[key] = val
         if key == 'comm_rate':
             _params.evol.comm_rate = val
-        elif key == ' shared_discount':
+        elif key == 'shared_discount':
             _params.shareability.shared_discount = val
         else:
             _params[key] = val
