@@ -55,6 +55,8 @@ class VehicleAgent(object):
         self.tveh_pickup = None  # travel time from .pos to request first node
         # output reports
         self.myrides = list()  # report of this vehicle process, populated while simulating
+        self.served_requests = list()  # served requests
+        self.service_times = list()  # served requests
         # functions
         self.f_driver_out = self.sim.functions.f_driver_out  # exit from the system due to prev exp
         self.f_driver_decline = self.sim.functions.f_driver_decline  # reject the incoming request
@@ -113,6 +115,8 @@ class VehicleAgent(object):
     def loop_day(self):
         # main routine of the vehicle process
         self.update(event=driverEvent.STARTS_DAY)
+        self.served_requests = list()  # served requests
+        self.service_times = list()  # served requests
         if self.f_driver_out(veh=self):  # first see if driver wants to work this day (by default he wants)
             self.update(event=driverEvent.DECIDES_NOT_TO_DRIVE)
             msg = "veh {:>4}  {:40} {}".format(self.id, 'opted-out from the system', self.sim.print_now())
@@ -141,6 +145,7 @@ class VehicleAgent(object):
                     self.arrives[req] = self.sim.env.event()  # when vehicle arrives at dropoff
                 no_shows = list()
                 for i in range(1, self.schedule.shape[0]):  # loop over the schedule
+
                     stage = self.schedule.loc[i]
                     if stage.req_id in no_shows:
                         break  # we do not serve this gentleman
@@ -160,10 +165,16 @@ class VehicleAgent(object):
                         yield self.sim.pax[stage.req_id].pickuped  # wait until passenger has boarded
                         self.paxes.append(int(stage.req_id))
                         self.update(event=driverEvent.DEPARTS_FROM_PICKUP)
+                        if i == 1:
+                            start_time = self.sim.env.now
                     elif stage.od == 'd':
                         self.arrives[stage.req_id].succeed()  # arrived
                         self.update(event=driverEvent.ARRIVES_AT_DROPOFF, pos=stage.node)
+                        if i == self.schedule.shape[0] - 1:  # succesfully served schedule
+                            self.service_times.append(self.sim.env.now - start_time)
+                            self.served_requests.append(self.schedule.copy())
                         yield self.sim.pax[stage.req_id].dropoffed  # wait until passenger has left
+
                         self.paxes.remove(stage.req_id)
 
                 self.clear_me()  # initialize events. clear request

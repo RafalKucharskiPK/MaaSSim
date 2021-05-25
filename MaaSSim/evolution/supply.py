@@ -5,6 +5,7 @@ import pandas as pd
 import math
 import random
 
+
 def generate_vehicles_coevolution(_inData, _params=None):
     """
     generates vehicle database
@@ -55,28 +56,23 @@ def supply_kpi_coevolution(*args, **kwargs):
     def get_revenues(veh):
         rides = sim.runs[run_id].rides[sim.runs[run_id].rides.veh == veh.name]
         paxes = list(set.union(*rides.paxes.apply(set).values))
-        return sim.res[run_id].pax_exp.loc[paxes].fare.sum()*(1-params.evol.comm_rate)
+        return sim.res[run_id - 1].pax_exp.loc[paxes].fare.sum() * (1 - params.evol.comm_rate)
 
     def get_revenues_distance(veh):
-        return veh.DEPARTS_FROM_PICKUP * params.platforms.fare * params.evol.comm_rate
+        return sum(sim.vehs[veh.name].service_times) * params.speeds.ride * \
+               params.platforms.fare/1000 * params.evol.comm_rate
 
     def get_commission(veh):
         rides = sim.runs[run_id].rides[sim.runs[run_id].rides.veh == veh.name]
         paxes = list(set.union(*rides.paxes.apply(set).values))
-        return sim.res[run_id].pax_exp.loc[paxes].fare.sum()*(params.evol.comm_rate)
+        return sim.res[run_id - 1].pax_exp.loc[paxes].fare.sum() * (params.evol.comm_rate)
 
     def get_commission_distance(veh):
         rides = sim.runs[run_id].rides[sim.runs[run_id].rides.veh == veh.name]
         paxes = list(set.union(*rides.paxes.apply(set).values))
-        FARES = sim.res[run_id].pax_exp.loc[paxes].fare.sum()
+        FARES = sim.res[run_id - 1].pax_exp.loc[paxes].fare.sum()
 
         return FARES - veh.REVENUE
-
-
-
-
-
-
 
     dfd = df.loc[df.event == 'DEPARTS_FROM_PICKUP']
     dfd['fare'] = (dfd.dt * (params.speeds.ride / 1000) * params.platforms.fare).add(params.platforms.base_fare)
@@ -94,20 +90,20 @@ def supply_kpi_coevolution(*args, **kwargs):
     ret['DRIVING_TIME'] = ret.REJECTS_REQUEST + ret.IS_ACCEPTED_BY_TRAVELLER + ret.DEPARTS_FROM_PICKUP
     ret['DRIVING_DIST'] = ret['DRIVING_TIME'] * (params.speeds.ride / 1000)
 
-    ret['REVENUE'] = ret.apply(get_revenues, axis = 1) #groupby(['veh'])['revenue'].sum().reindex(ret.index).fillna(0)
-    ret['COMMISSION'] = ret.apply(get_commission, axis=1)
+    # ret['REVENUE'] = ret.apply(get_revenues, axis=1)  # groupby(['veh'])['revenue'].sum().reindex(ret.index).fillna(0)
+    # ret['COMMISSION'] = ret.apply(get_commission, axis=1)
 
-    ret['REVENUE'] = ret.apply(get_revenues_distance, axis = 1) #groupby(['veh'])['revenue'].sum().reindex(ret.index).fillna(0)
+    ret['REVENUE'] = ret.apply(get_revenues_distance,
+                               axis=1)  # groupby(['veh'])['revenue'].sum().reindex(ret.index).fillna(0)
     ret['COMMISSION'] = ret.apply(get_commission_distance, axis=1)
-
-
 
     ret['COST'] = ret['DRIVING_DIST'] * (params.drivers.fuel_costs)
     ret['NET_INCOME'] = ret['REVENUE'] - ret['COST']
     ret = ret[
-        ['nRIDES', 'nREJECTED', 'DRIVING_TIME', 'DRIVING_DIST', 'COMMISSION', 'REVENUE', 'COST', 'NET_INCOME', 'OUT'] + [_.name for _
-                                                                                                           in
-                                                                                                           driverEvent]]
+        ['nRIDES', 'nREJECTED', 'DRIVING_TIME', 'DRIVING_DIST', 'COMMISSION', 'REVENUE', 'COST', 'NET_INCOME',
+         'OUT'] + [_.name for _
+                   in
+                   driverEvent]]
     ret.index.name = 'veh'
 
     # KPIs
@@ -118,9 +114,9 @@ def supply_kpi_coevolution(*args, **kwargs):
 
 def driver_out_d2d(*args, **kwargs):
     """ returns True if driver decides not to drive, and False if he drives"""
-    veh = kwargs.get('veh',None)
+    veh = kwargs.get('veh', None)
     sim = veh.sim
-    if len(sim.run_ids)==0:
+    if len(sim.run_ids) == 0:
         return False
     else:
         run_id = sim.run_ids[-1]
@@ -138,7 +134,6 @@ def drivers_learning(*args, **kwargs):
 
     def update_expected_income(row):
 
-
         if run_id > 0 and sim.res[run_id - 1].veh_exp.loc[row.name].learned:  # learning is over expectations are fixed
             return sim.res[run_id - 1].veh_exp.loc[row.name].perc_income  # do not update
         elif sim.res[run_id].veh_exp.loc[row.name].OUT:  # no experience from yesterday
@@ -155,7 +150,6 @@ def drivers_learning(*args, **kwargs):
                 kappa = 1 / (min(params.evol.drivers.window, row.worked_days) + 1)
             new_experience = sim.res[run_id].veh_exp.loc[row.name].NET_INCOME
             return old * (1 - kappa) + kappa * new_experience
-
 
     def learned(row):
         if run_id == 0:
@@ -198,25 +192,22 @@ def drivers_learning(*args, **kwargs):
 
     veh_exp['perc_income'] = veh_exp.apply(update_expected_income, axis=1)
 
-
     veh_exp['learned'] = veh_exp.apply(learned, axis=1)
 
     veh_exp['util_d'] = params.evol.drivers.particip.beta * veh_exp.perc_income
     veh_exp['util_nd'] = params.evol.drivers.particip.beta * sim.vehicles.res_wage
-    veh_exp['prob_d'] = veh_exp.apply(lambda x: np.exp(x.util_d)/(np.exp(x.util_d)+np.exp(x.util_nd)), axis = 1)
-    veh_exp['drive_decision']=veh_exp.apply(lambda x: 'drive' if random.random() <= x.prob_d else 'out', axis = 1)
+    veh_exp['prob_d'] = veh_exp.apply(lambda x: np.exp(x.util_d) / (np.exp(x.util_d) + np.exp(x.util_nd)), axis=1)
+    veh_exp['drive_decision'] = veh_exp.apply(lambda x: 'drive' if random.random() <= x.prob_d else 'out', axis=1)
 
     sim.inData.vehicles['drive_decision'] = veh_exp['drive_decision']
 
-    #prob_d_reg = math.exp(veh_exp['util_d']) / (math.exp(veh_exp['util_d']) + math.exp(util_nd))
-    #prob_d_all = prob_d_reg
-
-
-
+    # prob_d_reg = math.exp(veh_exp['util_d']) / (math.exp(veh_exp['util_d']) + math.exp(util_nd))
+    # prob_d_all = prob_d_reg
 
     sim.res[run_id].veh_exp = veh_exp
 
     return sim
+
 
 def stop_crit_supply(**kwargs):
     # stops simulations if at least 80% travellers have ended their learing
@@ -233,6 +224,6 @@ def stop_crit_supply(**kwargs):
                             "{:.2f}\tconv: {:.2f}".format(run_id,
                                                           sim.res[run_id].veh_exp.learned.sum() / sim.params.nV,
                                                           sim.res[run_id].veh_exp.perc_income.mean().round(2),
-                                                                                              conv))
+                                                          conv))
         return conv < sim.params.evol.drivers.stopping_criteria \
                and sim.res[run_id].veh_exp.learned.sum() > sim.params.evol.drivers.share_learned * sim.params.nV
