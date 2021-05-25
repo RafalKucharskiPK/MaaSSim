@@ -55,12 +55,22 @@ def supply_kpi_coevolution(*args, **kwargs):
     def get_revenues(veh):
         rides = sim.runs[run_id].rides[sim.runs[run_id].rides.veh == veh.name]
         paxes = list(set.union(*rides.paxes.apply(set).values))
-        return sim.res[run_id - 1].pax_exp.loc[paxes].fare.sum()*(1-params.evol.comm_rate)
+        return sim.res[run_id].pax_exp.loc[paxes].fare.sum()*(1-params.evol.comm_rate)
+
+    def get_revenues_distance(veh):
+        return veh.DEPARTS_FROM_PICKUP * params.platforms.fare * params.evol.comm_rate
 
     def get_commission(veh):
         rides = sim.runs[run_id].rides[sim.runs[run_id].rides.veh == veh.name]
         paxes = list(set.union(*rides.paxes.apply(set).values))
-        return sim.res[run_id - 1].pax_exp.loc[paxes].fare.sum()*(params.evol.comm_rate)
+        return sim.res[run_id].pax_exp.loc[paxes].fare.sum()*(params.evol.comm_rate)
+
+    def get_commission_distance(veh):
+        rides = sim.runs[run_id].rides[sim.runs[run_id].rides.veh == veh.name]
+        paxes = list(set.union(*rides.paxes.apply(set).values))
+        FARES = sim.res[run_id].pax_exp.loc[paxes].fare.sum()
+
+        return FARES - veh.REVENUE
 
 
 
@@ -83,8 +93,15 @@ def supply_kpi_coevolution(*args, **kwargs):
 
     ret['DRIVING_TIME'] = ret.REJECTS_REQUEST + ret.IS_ACCEPTED_BY_TRAVELLER + ret.DEPARTS_FROM_PICKUP
     ret['DRIVING_DIST'] = ret['DRIVING_TIME'] * (params.speeds.ride / 1000)
+
     ret['REVENUE'] = ret.apply(get_revenues, axis = 1) #groupby(['veh'])['revenue'].sum().reindex(ret.index).fillna(0)
     ret['COMMISSION'] = ret.apply(get_commission, axis=1)
+
+    ret['REVENUE'] = ret.apply(get_revenues_distance, axis = 1) #groupby(['veh'])['revenue'].sum().reindex(ret.index).fillna(0)
+    ret['COMMISSION'] = ret.apply(get_commission_distance, axis=1)
+
+
+
     ret['COST'] = ret['DRIVING_DIST'] * (params.drivers.fuel_costs)
     ret['NET_INCOME'] = ret['REVENUE'] - ret['COST']
     ret = ret[

@@ -155,8 +155,10 @@ def set_fixed_utilities(sim):
                                                                           mcp.beta_cost * row.rh_fare + mcp.ASC_rh,
                                                               axis=1)
 
-    inData.passengers['fixed_U_rp'] = inData.passengers.apply(lambda row: mcp.beta_cost * row.rp_fare + mcp.ASC_rp,
+    inData.passengers['fixed_U_rp'] = inData.passengers.apply(lambda row: mcp.beta_cost * row.rp_fare + mcp.ASC_rp -
+                                                                          100000 if params.shareability.shared_discount ==0 else 0,
                                                               axis=1)
+
 
     inData.passengers['exp_sum_fixed'] = inData.passengers.apply(
         lambda x: np.exp(x.U_car) + np.exp(x.U_pt) + np.exp(x.U_bike),

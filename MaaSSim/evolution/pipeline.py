@@ -51,7 +51,8 @@ def pipeline(params=None, filename=None, **kwargs):
     inData.vehicles.platform = 1  # all vehicles serving the same platform (pooled in private ride-hailing)
     inData = generate_demand_coevolution(inData, params)  # travel times a
     inData.platforms = pd.read_csv(params.paths.platforms, index_col=0)
-    params.shareability.logger_level = 'WARNING'
+    params.shareability.logger_level = 'INFO'
+
 
     inData = ExMAS.main(inData, params.shareability, plot=False)  # create shareability graph (ExMAS)
 
@@ -83,8 +84,9 @@ def pipeline(params=None, filename=None, **kwargs):
         sim.inData.sblts.requests['shareable'] = sim.inData.requests['shareable']  # bookkeeping
 
         sim.inData = prep_shared_rides(sim.inData, sim.params.shareability)  # prepare schedules
-        sim.logger.warn("shared:{} \t degree:{:.2f}".format(sim.inData.requests.shareable.sum(),
-                                                            sim.inData.sblts.schedule.degree.mean()))
+        if sim.params.shareability.shared_discount >0:
+            sim.logger.warn("shared:{} \t degree:{:.2f}".format(sim.inData.requests.shareable.sum(),
+                                                                sim.inData.sblts.schedule.degree.mean()))
 
         sim.inData.passengers.platforms = sim.inData.passengers.apply(lambda x: [-2] if x.platforms == -2 else [1],
                                                                       axis=1)
@@ -172,7 +174,7 @@ def day_report(sim,run_id):
                   'conv_rh': conv_rh,
                   'conv_supply': conv_supply,
                   # others
-                  'shareability': sim.inData.sblts.schedule.degree.mean(),
+                  'shareability': sim.inData.sblts.schedule.degree.mean() if sim.params.shareability.shared_discount>0 else 0,
                   'unserved':
                       sim.res[run_id].pax_exp[sim.res[run_id].pax_exp.LOSES_PATIENCE > 0].shape[0],
                   }
@@ -181,10 +183,10 @@ def day_report(sim,run_id):
 def evolution_search_space():
     # to see if code works
     test_space = DotMap()
-    test_space.nP = [300, 500, 700]  # number of requests per sim time
-    test_space.nV = [20, 50, 80]  # number of requests per sim time
-    test_space.comm_rate = [0.1, 0.2, 0.3]
-    test_space.shared_discount = [0.15, 0.2, 0.25]
+    test_space.nP = [100, 300, 500, 700, 900]  # number of requests per sim time
+    test_space.nV = [10, 30, 50, 70, 90]  # number of requests per sim time
+    test_space.comm_rate = [0.1, 0.4, 0.7, 1, 1.3]
+    test_space.shared_discount = [0, 0.15, 0.3, 0.45]
     return test_space
 
 
