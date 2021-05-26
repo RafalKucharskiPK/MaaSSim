@@ -54,7 +54,8 @@ def pipeline(params=None, filename=None, **kwargs):
     params.shareability.logger_level = 'INFO'
 
     if params.shareability.shared_discount == 0:
-        params.shareability.max_degree = 1
+        params.shareability.max_degree = 1 # to  make sure shared-rides are not computed
+        # when they are not offered by the platform
 
     inData = ExMAS.main(inData, params.shareability, plot=False)  # create shareability graph (ExMAS)
 

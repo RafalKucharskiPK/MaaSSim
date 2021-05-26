@@ -6,7 +6,7 @@ from MaaSSim.utils import generate_demand
 from MaaSSim.traveller import travellerEvent
 from dotmap import DotMap
 
-M_penalty = -10000
+M_penalty = 10000
 
 
 def generate_demand_coevolution(_inData, _params=None):
