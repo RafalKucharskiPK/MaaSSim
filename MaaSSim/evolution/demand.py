@@ -6,6 +6,8 @@ from MaaSSim.utils import generate_demand
 from MaaSSim.traveller import travellerEvent
 from dotmap import DotMap
 
+M_penalty = -10000
+
 
 def generate_demand_coevolution(_inData, _params=None):
     """
@@ -156,7 +158,7 @@ def set_fixed_utilities(sim):
                                                               axis=1)
 
     inData.passengers['fixed_U_rp'] = inData.passengers.apply(lambda row: mcp.beta_cost * row.rp_fare + mcp.ASC_rp -
-                                                                          100000 if params.shareability.shared_discount ==0 else 0,
+                                                                          M_penalty if params.shareability.shared_discount ==0 else 0,
                                                               axis=1)
 
 

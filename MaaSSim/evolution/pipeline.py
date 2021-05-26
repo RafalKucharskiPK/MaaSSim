@@ -53,6 +53,8 @@ def pipeline(params=None, filename=None, **kwargs):
     inData.platforms = pd.read_csv(params.paths.platforms, index_col=0)
     params.shareability.logger_level = 'INFO'
 
+    if params.shareability.shared_discount == 0:
+        params.shareability.max_degree = 1
 
     inData = ExMAS.main(inData, params.shareability, plot=False)  # create shareability graph (ExMAS)
 
