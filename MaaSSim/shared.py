@@ -26,6 +26,7 @@ def prep_shared_rides(_inData, sp, _print=False):
     sp.share = sp.get('share', -1)  # share of shareable rides # if below zero use from the input
     requests = _inData.requests
 
+
     if sp.share>=0:
         if sp.shape == 0:
             requests.shareable = False  # all requests are not shareable

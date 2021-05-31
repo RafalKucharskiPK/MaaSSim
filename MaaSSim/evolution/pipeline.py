@@ -53,9 +53,9 @@ def pipeline(params=None, filename=None, **kwargs):
     inData.platforms = pd.read_csv(params.paths.platforms, index_col=0)
     params.shareability.logger_level = 'INFO'
 
-    if params.shareability.shared_discount == 0:
-        params.shareability.max_degree = 1 # to  make sure shared-rides are not computed
-        # when they are not offered by the platform
+    #if params.shareability.shared_discount == 0:
+    #    params.shareability.max_degree = 1 # to  make sure shared-rides are not computed
+    #    # when they are not offered by the platform
 
     inData = ExMAS.main(inData, params.shareability, plot=False)  # create shareability graph (ExMAS)
 
@@ -132,7 +132,11 @@ def day_report(sim,run_id):
     else:
         conv_rp, conv_rh, conv_supply = 0,0,0
 
-
+    if sim.inData.sblts.rides.shape[0] == sim.inData.sblts.requests.shape[0]:
+        shareability = 0
+    else:
+        requests = sim.inData.sblts.requests
+        shareability = requests[requests.shareable].ttrav.sum()/sim.inData.sblts.schedule.u_veh.sum()-1
 
     day_report = {'day': run_id, # index
                   # experimental input
@@ -177,7 +181,7 @@ def day_report(sim,run_id):
                   'conv_rh': conv_rh,
                   'conv_supply': conv_supply,
                   # others
-                  'shareability': sim.inData.sblts.schedule.degree.mean() if sim.params.shareability.shared_discount>0 else 0,
+                  'shareability': shareability,
                   'unserved':
                       sim.res[run_id].pax_exp[sim.res[run_id].pax_exp.LOSES_PATIENCE > 0].shape[0],
                   }
