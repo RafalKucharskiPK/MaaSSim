@@ -191,9 +191,9 @@ def evolution_search_space():
     # to see if code works
     test_space = DotMap()
     test_space.nP = [100, 300, 500, 700, 900]  # number of requests per sim time
-    test_space.nV = [10, 30, 50, 70, 90]  # number of requests per sim time
-    test_space.comm_rate = [0.1, 0.4, 0.7, 1, 1.3]
-    test_space.shared_discount = [0, 0.15, 0.3, 0.45]
+    test_space.nV = [10, 20, 30, 40, 50, 60]  # number of requests per sim time
+    test_space.comm_rate = [0.1, 0.3, 0.5, 0.7, 0.9, 1.1]
+    test_space.shared_discount = [0, 0.05, 0.1, 0.2, 0.3, 0.4 ]
     return test_space
 
 

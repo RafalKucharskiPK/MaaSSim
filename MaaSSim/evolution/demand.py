@@ -201,7 +201,7 @@ def update_utils(sim):
     pax_exp['U_rp'] = pax_exp.apply(lambda row:
                                     sim.inData.passengers.loc[row.name].fixed_U_rp +
                                     mcp.beta_wait_rp * row.expected_wait_rp +
-                                    mcp.beta_time_moto * row.expected_travel_rp,
+                                    mcp.beta_time_moto * row.expected_travel_rp * params.shareability.WtS,
                                     axis=1)
 
     pax_exp['exp_sum'] = pax_exp.apply(lambda row:
