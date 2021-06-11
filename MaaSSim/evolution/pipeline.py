@@ -131,12 +131,17 @@ def day_report(sim,run_id):
                   sim.res[run_id-2].veh_exp.prob_d.mean()
     else:
         conv_rp, conv_rh, conv_supply = 0,0,0
+    print(sim.inData.sblts.requests.shape[0])
 
     if sim.inData.sblts.rides.shape[0] == sim.inData.sblts.requests.shape[0]:
         shareability = 0
+        n_actually_sharing = 0
+        n_shared_rides = 0
     else:
         requests = sim.inData.sblts.requests
         shareability = requests[requests.shareable].ttrav.sum()/sim.inData.sblts.schedule.u_veh.sum()-1
+        n_actually_sharing = sim.inData.sblts.requests[sim.inData.sblts.requests.kind>1].shape[0]
+        n_shared_rides = sim.inData.sblts.schedule[sim.inData.sblts.schedule.kind>1].shape[0]
 
     day_report = {'day': run_id, # index
                   # experimental input
@@ -182,6 +187,8 @@ def day_report(sim,run_id):
                   'conv_supply': conv_supply,
                   # others
                   'shareability': shareability,
+                  'n_actually_sharing':n_actually_sharing,
+                  'n_shared_rides': n_shared_rides,
                   'unserved':
                       sim.res[run_id].pax_exp[sim.res[run_id].pax_exp.LOSES_PATIENCE > 0].shape[0],
                   }
