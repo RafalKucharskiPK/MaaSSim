@@ -158,7 +158,7 @@ def set_fixed_utilities(sim):
                                                               axis=1)
 
     inData.passengers['fixed_U_rp'] = inData.passengers.apply(lambda row: mcp.beta_cost * row.rp_fare + mcp.ASC_rp -
-                                                                          M_penalty if params.shareability.shared_discount ==0 else 0,
+                                                                          (M_penalty if params.shareability.shared_discount ==0 else 0),
                                                               axis=1)
 
 
