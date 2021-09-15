@@ -58,14 +58,14 @@ def supply_kpi_coevolution(*args, **kwargs):
         paxes = list(set.union(*rides.paxes.apply(set).values))
         return sim.res[run_id - 1].pax_exp.loc[paxes].fare.sum() * (1 - params.evol.comm_rate)
 
-    def get_revenues_distance(veh):
-        return sum(sim.vehs[veh.name].service_times) * params.speeds.ride * \
-               params.platforms.fare/1000 * params.evol.comm_rate
-
     def get_commission(veh):
         rides = sim.runs[run_id].rides[sim.runs[run_id].rides.veh == veh.name]
         paxes = list(set.union(*rides.paxes.apply(set).values))
         return sim.res[run_id - 1].pax_exp.loc[paxes].fare.sum() * (params.evol.comm_rate)
+
+    def get_revenues_distance(veh):
+        return sum(sim.vehs[veh.name].service_times) * params.speeds.ride * \
+               params.platforms.fare/1000 * params.evol.comm_rate
 
     def get_commission_distance(veh):
         rides = sim.runs[run_id].rides[sim.runs[run_id].rides.veh == veh.name]
