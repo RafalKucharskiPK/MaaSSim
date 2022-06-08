@@ -86,4 +86,5 @@ def platforms():
     pd.DataFrame(ret).to_csv('pricing.csv')
 
 if __name__ == "__main__":
+    #supply_demand()
     platforms()
