@@ -124,7 +124,7 @@ for troubleshooting the installations please see the [travis.yml](https://github
 * scipy (scientific computations)
 * dotmap (data structure)
 * exmas (matching trips to attractive shared rides)
-* osmnx (the most trouublesome one - please follow official installation instructions [here](https://osmnx.readthedocs.io/en/stable/#installation))
+* osmnx (the most troublesome one - please follow official installation instructions [here](https://osmnx.readthedocs.io/en/stable/#installation))
     
 ----
 Rafał Kucharski, 2022, rafal.kucharski [at] uj.edu.pl
