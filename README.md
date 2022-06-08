@@ -102,9 +102,14 @@ Fig. 5. *Trace of rides for a single simulated vehicle without (a) and with pool
 
 # Installation:
 
-`pip install MaaSSim` (`osmnx` has to be installed first with instructions from here [https://github.com/gboeing/osmnx#installation](https://osmnx.readthedocs.io/en/stable/#installation))
 
-or clone this repository
+* pip (not recommended)
+`pip install MaaSSim` (`osmnx` has to be installed first with instructions from here [https://github.com/gboeing/osmnx#installation](https://osmnx.readthedocs.io/en/stable/#installation))
+then you can use it as a module, following the cookbook from here https://github.com/RafalKucharskiPK/MaaSSim/blob/master/docs/tutorials/00_MaaSSim_at_glance.ipynb
+
+all the files neede to run basic simuations are in te package files `MaaSSim/data`
+
+* clone this repository (recommended) - this way you can freely adjust the code, control the inputs and configure simulations. Best way to start is then [here, in the tutorials](https://github.com/RafalKucharskiPK/MaaSSim/tree/master/docs/tutorials)
 
 for troubleshooting the installations please see the [travis.yml](https://github.com/RafalKucharskiPK/MaaSSim/blob/master/.travis.yml) file with conda calls to create virtual env.
     
@@ -122,4 +127,4 @@ for troubleshooting the installations please see the [travis.yml](https://github
 * osmnx (the most trouublesome one - please follow official installation instructions [here](https://osmnx.readthedocs.io/en/stable/#installation))
     
 ----
-Rafał Kucharski, 2020
+Rafał Kucharski, 2022, rafal.kucharski [at] uj.edu.pl
