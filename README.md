@@ -102,9 +102,11 @@ Fig. 5. *Trace of rides for a single simulated vehicle without (a) and with pool
 
 # Installation:
 
-`pip install MaaSSim` (`osmnx` has to be installed first with instructions from here https://github.com/gboeing/osmnx#installation)
+`pip install MaaSSim` (`osmnx` has to be installed first with instructions from here [https://github.com/gboeing/osmnx#installation](https://osmnx.readthedocs.io/en/stable/#installation))
 
 or clone this repository
+
+for troubleshooting the installations please see the [travis.yml](https://github.com/RafalKucharskiPK/MaaSSim/blob/master/.travis.yml) file with conda calls to create virtual env.
     
 ### dependencies
 ---
@@ -117,6 +119,7 @@ or clone this repository
 * scipy (scientific computations)
 * dotmap (data structure)
 * exmas (matching trips to attractive shared rides)
+* osmnx (the most trouublesome one - please follow official installation instructions [here](https://osmnx.readthedocs.io/en/stable/#installation))
     
 ----
 Rafał Kucharski, 2020
