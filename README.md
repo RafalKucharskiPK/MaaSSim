@@ -18,6 +18,8 @@ Each simulation run results in two sets of outputs, one being the sequence of re
 
 > Research paper with details [R. Kucharski, O. Cats: Simulating two-sided mobility platforms with MaaSSim,PLOS One, 2022](https://doi.org/10.1371/journal.pone.0269682) (https://doi.org/10.1371/journal.pone.0269682)
 
+> Short presentation from MT-ITS 2021 [here](https://github.com/RafalKucharskiPK/rafalkucharskipk.github.io/blob/master/assets/pdf/MTITS_MaaSSim.pdf)
+
 #### Motivation
 
 The emergence of two-sided mobility markets disrupts the transport landscape. Conventional models for transport planning and operations are focused on top-down planning of service lines, timetable and traffic control measures which are not directly suitable for capturing the double-sided dynamics of mobility on demand services. This calls for the development of models that explicitly account for both supply-side and demand-side dynamics, as well as their interaction with the intermediate matching platform. In particular, in order to capture the bottom-up emerging order resulting from two-sided mobility, it is essential to revise the modelling approach of key elements of the transport system: demand (which is now inherently microscopic), supply (which has become a decision maker) and a road network (which capacity and congestion are no longer a single pivot variable of assignment models) along with a new agent, the platform, which orchestrates supply and demand interaction and which might be subject to regulation.
