@@ -133,9 +133,9 @@ def save_G(inData, _params, path=None):
     inData.skim.to_csv(_params.paths.skim, chunksize=20000000)
 
 
-def generate_vehicles(_inData, nV):
+def generate_vehicles(_inData, nV, user_controlled_vehicles_count: int = 0):
     """
-    generates single vehicle (database row with structure defined in DataStructures)
+    generates `nV` vehicles (database rows with structure defined in DataStructures)
     index is consecutive number if dataframe
     position is random graph node
     status is IDLE
@@ -150,6 +150,8 @@ def generate_vehicles(_inData, nV):
     vehs.shift_start = 0
     vehs.shift_end = 60 * 60 * 24
     vehs.pos = vehs.pos.apply(lambda x: int(rand_node(_inData.nodes)))
+    vehs.user_controlled = False
+    vehs.iloc[:user_controlled_vehicles_count, vehs.columns.get_loc("user_controlled")] = True
 
     return vehs
 
