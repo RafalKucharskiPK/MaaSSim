@@ -64,6 +64,7 @@ class VehicleAgent(object):
         self.schedule = None  # schedule served by vehicle (single request for case of non-shared rides)
         self.exit_flag = False  # raised at the end of the shift
         self.tveh_pickup = None  # travel time from .pos to request first node
+        self.total_income = 0.
         # output reports
         self.myrides = list()  # report of this vehicle process, populated while simulating
         # functions
@@ -168,7 +169,7 @@ class VehicleAgent(object):
                               self.sim.timeout(self.sim.params.times.pickup_patience,
                                                variability=self.sim.vars.ride)
                         if not self.sim.pax[stage.req_id].arrived_at_pick_up:  # if traveller did not arrive
-                            no_shows.apppend(stage.req_id)
+                            no_shows.append(stage.req_id)
                             break  # we do not serve this gentleman
                         self.update(event=driverEvent.MEETS_TRAVELLER_AT_PICKUP)
                         yield self.sim.pax[stage.req_id].pickuped  # wait until passenger has boarded

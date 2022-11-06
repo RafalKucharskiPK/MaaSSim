@@ -15,6 +15,7 @@ class UserController:
 
     @staticmethod
     def incoming_offer_decision(veh: VehicleAgent, offer: Offer) -> bool:
+        print(f"Current income: {veh.total_income}")
         print(f"Veh id: {veh.id}")
         print(f"Fare: {offer['fare']}")
         print(f"Travel time: {offer['travel_time']}")
@@ -24,6 +25,7 @@ class UserController:
 
     @staticmethod
     def reposition_decision(veh: VehicleAgent) -> DotMap:
+        print(f"Current income: {veh.total_income}")
         repos = DotMap()
         driver = veh
         sim = driver.sim
@@ -51,5 +53,4 @@ class UserController:
 
     @staticmethod
     def drive_out_today_decision(veh: VehicleAgent) -> bool:
-        print(veh.myrides)
         return ACCEPT
