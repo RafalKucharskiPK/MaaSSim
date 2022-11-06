@@ -151,7 +151,8 @@ def generate_vehicles(_inData, nV, user_controlled_vehicles_count: int = 0):
     vehs.shift_end = 60 * 60 * 24
     vehs.pos = vehs.pos.apply(lambda x: int(rand_node(_inData.nodes)))
     vehs.user_controlled = False
-    vehs.iloc[:user_controlled_vehicles_count, vehs.columns.get_loc("user_controlled")] = True
+    if isinstance(user_controlled_vehicles_count, int) and user_controlled_vehicles_count > 0:
+        vehs.iloc[:user_controlled_vehicles_count, vehs.columns.get_loc("user_controlled")] = True
 
     return vehs
 
