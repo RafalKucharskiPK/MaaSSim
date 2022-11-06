@@ -120,6 +120,7 @@ class Simulator:
             self.pax[pax_id] = PassengerAgent(self, pax_id)
         for veh_id in self.vehicles.index:
             self.vehs[veh_id] = VehicleAgent(self, veh_id)
+        # TODO: Add UserControlledVehicleAgent here
 
     #########
     #  RUN  #
@@ -271,7 +272,7 @@ class Simulator:
         return csv_zip
 
     def update_decisions_and_params(self, **kwargs):
-        self.defaults.update(kwargs)  # update defaults with kwargs
+        self.defaults.update(kwargs)  # update defaults with kwargs TODO: Here should be user controllers passed
         self.params = self.defaults['params']  # json dict with parameters
 
         # populate functions

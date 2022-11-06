@@ -108,7 +108,7 @@ def simulate(config="data/config.json", inData=None, params=None, **kwargs):
     if len(inData.passengers) == 0:  # only if no passengers in input
         inData = generate_demand(inData, params, avg_speed=True)
     if len(inData.vehicles) == 0:  # only if no vehicles in input
-        inData.vehicles = generate_vehicles(inData, params.nV)
+        inData.vehicles = generate_vehicles(inData, params.nV, params.user_controlled_vehicles_count)
     if len(inData.platforms) == 0:  # only if no platforms in input
         inData.platforms = initialize_df(inData.platforms)
         inData.platforms.loc[0] = empty_series(inData.platforms)
