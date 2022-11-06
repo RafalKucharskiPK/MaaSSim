@@ -3,9 +3,8 @@
 # Platform agent
 # Rafal Kucharski @ TU Delft
 ################################################################################
-
-
-from .driver import driverEvent
+from .decisions import Offer
+from .driver import driverEvent, VehicleAgent
 from .traveller import travellerEvent
 import simpy
 import random
@@ -147,9 +146,9 @@ class PlatformAgent(object):
         :param offer_id:
         :return:
         """
-        offer = self.offers[offer_id]
+        offer: Offer = self.offers[offer_id]
         offer['status'] = -1
-        veh = self.sim.vehs[offer['veh_id']]
+        veh: VehicleAgent = self.sim.vehs[offer['veh_id']]
 
         for i in offer['simpaxes']:
             self.sim.pax[i].update(event=travellerEvent.ACCEPTS_OFFER)
@@ -161,6 +160,7 @@ class PlatformAgent(object):
 
         # veh.request = request  # assign request to vehicles
         veh.schedule = self.sim.pax[offer['simpaxes'][0]].schedule
+        veh.total_income += offer['fare']
         # simpax.found_veh.succeed()  # raise the event for passenger
         # simpax.veh = vehicle  # assigne the vehicle to passenger
 
