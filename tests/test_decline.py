@@ -15,6 +15,7 @@ class TestdriverDecline(unittest.TestCase):
         params.times.patience = 600  # 1 hour of simulation
         params.nP = 10  # reuqests (and passengers)
         params.nV = 10  # vehicles
+        params.user_controlled_vehicles_count = 0
         params.simTime = 4
         params.nD = 1
         sim = simulator_driver_decl(params=params, f_driver_decline=f_decline)

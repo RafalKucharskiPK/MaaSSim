@@ -3,8 +3,11 @@
 # Description: Agent decision function templates
 # Rafal Kucharski @ TU Delft, The Netherlands
 ################################################################################
+from enum import IntEnum
 from math import exp
 import random
+from typing import Any, List, TypedDict
+
 import pandas as pd
 from dotmap import DotMap
 from numpy.random.mtrand import choice
@@ -42,6 +45,23 @@ def f_dummy_repos(*args, **kwargs):
 ################
 #    DRIVER    #
 ################
+class OfferStatus(IntEnum):
+    MADE = 0
+    ACCEPTED = 1
+    REJECTED_BY_TRAVELLER = -1
+    REJECTED_BY_DRIVER = -2
+
+
+class Offer(TypedDict):
+    pax_id: int
+    req_id: int
+    simpaxes: List[Any]
+    veh_id: int
+    status: OfferStatus
+    request: pd.Series
+    wait_time: int
+    travel_time: float
+    fare: float
 
 
 def f_driver_out(*args, **kwargs):
@@ -218,18 +238,20 @@ def f_match(**kwargs):
                     ttrav = pax_request.ttrav
                 else:
                     ttrav = pax_request.ttrav.total_seconds()
-                offer = {'pax_id': i,
-                         'req_id': pax_request.name,
-                         'simpaxes': simpaxes,
-                         'veh_id': veh_id,
-                         'status': 0,  # 0 -  offer made, 1 - accepted, -1 rejected by traveller, -2 rejected by veh
-                         'request': pax_request,
-                         'wait_time': mintime,
-                         'travel_time': ttrav,
-                         'fare': platform.platform.fare * sim.pax[i].request.dist / 1000}  # make an offer
+                offer: Offer = {
+                    'pax_id': i,
+                    'req_id': pax_request.name,
+                    'simpaxes': simpaxes,
+                    'veh_id': veh_id,
+                    'status': 0,  # 0 -  offer made, 1 - accepted, -1 rejected by traveller, -2 rejected by veh
+                    'request': pax_request,
+                    'wait_time': mintime,
+                    'travel_time': ttrav,
+                    'fare': platform.platform.fare * sim.pax[i].request.dist / 1000,
+                }  # make an offer
                 platform.offers[offer_id] = offer  # bookkeeping of offers made by platform
                 sim.pax[i].offers[platform.platform.name] = offer  # offer transferred to
-            if veh.f_driver_decline(veh=veh):  # allow driver reject the request
+            if veh.decision_system.f_driver_decline(veh=veh, offer=offer):  # allow driver reject the request
                 veh.update(event=driverEvent.REJECTS_REQUEST)
                 platform.offers[offer_id]['status'] = -2
                 for i in simpaxes:

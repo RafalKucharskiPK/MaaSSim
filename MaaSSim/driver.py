@@ -4,8 +4,8 @@
 # Rafal Kucharski @ TU Delft, The Netherlands
 ################################################################################
 
-from enum import Enum
 import time
+from enum import Enum
 
 
 class driverEvent(Enum):
@@ -30,6 +30,20 @@ class driverEvent(Enum):
     ENDS_SHIFT = -2
 
 
+class SimpleVehicleAgentDecisionSystem:
+    def __init__(self, simData) -> None:
+        self.f_driver_out = simData.functions.f_driver_out  # exit from the system due to prev exp
+        self.f_driver_decline = simData.functions.f_driver_decline  # reject the incoming request
+        self.f_driver_repos = simData.functions.f_driver_repos  # reposition after you are free again
+
+
+class UserControlledVehicleAgentDecisionSystem:
+    def __init__(self, simData) -> None:
+        self.f_driver_out = simData.functions.f_user_controlled_driver_out
+        self.f_driver_decline = simData.functions.f_user_controlled_driver_decline
+        self.f_driver_repos = simData.functions.f_user_controlled_driver_repos
+
+
 class VehicleAgent(object):
     """
     Driver Agent
@@ -50,15 +64,18 @@ class VehicleAgent(object):
         self.schedule = None  # schedule served by vehicle (single request for case of non-shared rides)
         self.exit_flag = False  # raised at the end of the shift
         self.tveh_pickup = None  # travel time from .pos to request first node
+        self.total_income = 0.
         # output reports
         self.myrides = list()  # report of this vehicle process, populated while simulating
         # functions
-        self.f_driver_out = self.sim.functions.f_driver_out  # exit from the system due to prev exp
-        self.f_driver_decline = self.sim.functions.f_driver_decline  # reject the incoming request
-        self.f_driver_repos = self.sim.functions.f_driver_repos  # reposition after you are free again
+        if self.veh.user_controlled:
+            self.decision_system = UserControlledVehicleAgentDecisionSystem(self.sim)
+        else:
+            self.decision_system = SimpleVehicleAgentDecisionSystem(self.sim)
+
         # events
         self.requested = self.sim.env.event()  # triggers when vehicle is requested
-        self.arrives_at_pick_up = dict()  # list of events for each passengers in the schedule
+        self.arrives_at_pick_up = dict()  # list of events for each passenger in the schedule
         self.arrives = dict()  # list of events for each arrival at passenger origin
         # main action
         self.action = self.sim.env.process(self.loop_day())  # main process in simu
@@ -110,7 +127,7 @@ class VehicleAgent(object):
     def loop_day(self):
         # main routine of the vehicle process
         self.update(event=driverEvent.STARTS_DAY)
-        if self.f_driver_out(veh=self):  # first see if driver wants to work this day (by default he wants)
+        if self.decision_system.f_driver_out(veh=self):  # first see if driver wants to work this day (by default he wants)
             self.update(event=driverEvent.DECIDES_NOT_TO_DRIVE)
             msg = "veh {:>4}  {:40} {}".format(self.id, 'opted-out from the system', self.sim.print_now())
             self.sim.logger.info(msg)
@@ -120,7 +137,7 @@ class VehicleAgent(object):
 
         while True:
             # try:  # depreciated since now traveller rejects instantly for simplicity
-            repos = self.f_driver_repos(veh=self)  # reposition yourself
+            repos = self.decision_system.f_driver_repos(veh=self)  # reposition yourself
             if repos.flag:  # if reposition
                 self.update(event=driverEvent.STARTS_REPOSITIONING)
                 yield self.sim.timeout(repos.time, variability=self.sim.vars.ride)
@@ -152,7 +169,7 @@ class VehicleAgent(object):
                               self.sim.timeout(self.sim.params.times.pickup_patience,
                                                variability=self.sim.vars.ride)
                         if not self.sim.pax[stage.req_id].arrived_at_pick_up:  # if traveller did not arrive
-                            no_shows.apppend(stage.req_id)
+                            no_shows.append(stage.req_id)
                             break  # we do not serve this gentleman
                         self.update(event=driverEvent.MEETS_TRAVELLER_AT_PICKUP)
                         yield self.sim.pax[stage.req_id].pickuped  # wait until passenger has boarded

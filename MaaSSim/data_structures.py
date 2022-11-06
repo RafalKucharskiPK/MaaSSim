@@ -20,7 +20,8 @@ structures.vehicles = pd.DataFrame(columns=['id',
                                             'shift_start',
                                             'shift_end',
                                             'platform',
-                                            'expected_income']).set_index('id')
+                                            'expected_income',
+                                            'user_controlled']).set_index('id')
 
 structures.platforms = pd.DataFrame(columns=['id',
                                              'fare',

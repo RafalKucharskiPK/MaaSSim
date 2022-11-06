@@ -16,6 +16,7 @@ class TestdriverOut(unittest.TestCase):
         params.nV = 50  # vehicles
         params.simTime = 4
         params.nD = 1
+        params.user_controlled_vehicles_count = 0
         sim = simulator_driver_out(params=params, f_driver_out=dummy_False)
         self.assertEqual(sim.res[0].veh_exp[sim.res[0].veh_exp.ENDS_SHIFT == 0].shape[0], 0)
         del sim
