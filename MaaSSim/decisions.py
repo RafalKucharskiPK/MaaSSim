@@ -237,7 +237,7 @@ def f_match(**kwargs):
                          'fare': platform.platform.fare * sim.pax[i].request.dist / 1000}  # make an offer
                 platform.offers[offer_id] = offer  # bookkeeping of offers made by platform
                 sim.pax[i].offers[platform.platform.name] = offer  # offer transferred to
-            if veh.f_driver_decline(veh=veh):  # allow driver reject the request
+            if veh.decision_system.f_driver_decline(veh=veh):  # allow driver reject the request
                 veh.update(event=driverEvent.REJECTS_REQUEST)
                 platform.offers[offer_id]['status'] = -2
                 for i in simpaxes:
