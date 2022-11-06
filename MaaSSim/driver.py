@@ -4,8 +4,8 @@
 # Rafal Kucharski @ TU Delft, The Netherlands
 ################################################################################
 
-from enum import Enum
 import time
+from enum import Enum
 
 
 class driverEvent(Enum):
@@ -39,15 +39,9 @@ class SimpleVehicleAgentDecisionSystem:
 
 class UserControlledVehicleAgentDecisionSystem:
     def __init__(self, simData) -> None:
-        def wrapper(func, value):
-            def print_and_execute(**kwargs):
-                print(value)
-                return func(**kwargs)
-            return print_and_execute
-
-        self.f_driver_out = wrapper(simData.functions.f_driver_out, "f_driver_out")  # exit from the system due to prev exp
-        self.f_driver_decline = wrapper(simData.functions.f_driver_decline, "f_driver_decline")  # reject the incoming request
-        self.f_driver_repos = wrapper(simData.functions.f_driver_repos, "f_driver_repos")  # reposition after you are free again
+        self.f_driver_out = simData.functions.f_user_controlled_driver_out
+        self.f_driver_decline = simData.functions.f_user_controlled_driver_decline
+        self.f_driver_repos = simData.functions.f_user_controlled_driver_repos
 
 
 class VehicleAgent(object):
@@ -80,7 +74,7 @@ class VehicleAgent(object):
 
         # events
         self.requested = self.sim.env.event()  # triggers when vehicle is requested
-        self.arrives_at_pick_up = dict()  # list of events for each passengers in the schedule
+        self.arrives_at_pick_up = dict()  # list of events for each passenger in the schedule
         self.arrives = dict()  # list of events for each arrival at passenger origin
         # main action
         self.action = self.sim.env.process(self.loop_day())  # main process in simu

@@ -21,6 +21,7 @@ from MaaSSim.driver import VehicleAgent
 from MaaSSim.decisions import f_dummy_repos, f_match, dummy_False
 from MaaSSim.transport_platform import PlatformAgent
 from MaaSSim.performance import kpi_pax, kpi_veh
+from MaaSSim.user_controller import UserController
 from MaaSSim.utils import initialize_df
 import sys
 import logging
@@ -31,6 +32,10 @@ DEFAULTS = dict(f_match=f_match,
                 f_driver_out=dummy_False,
                 f_driver_decline=dummy_False,
                 f_driver_repos=f_dummy_repos,
+
+                f_user_controlled_driver_out=UserController.drive_out_today_decision,
+                f_user_controlled_driver_decline=UserController.incoming_offer_decision,
+                f_user_controlled_driver_repos=UserController.reposition_decision,
 
                 f_trav_out=dummy_False,
                 f_trav_mode=dummy_False,
@@ -63,6 +68,9 @@ class Simulator:
               'f_driver_decline',
               'f_platform_choice',
               'f_driver_repos',
+              'f_user_controlled_driver_out',
+              'f_user_controlled_driver_decline',
+              'f_user_controlled_driver_repos',
               'f_timeout',
               'f_stop_crit',
               'kpi_pax',
