@@ -207,25 +207,28 @@ class PassengerAgent(object):
 
                 # wait until either vehicle was found or pax lost his patience
                 yield self.got_offered | self.sim.timeout(self.sim.params.times.patience,
-                                                        variability=self.sim.vars.patience)
+                                                        variability=self.sim.vars.patience) | self.my_schedule_triggered
 
-                # print(self.offers)
-                if len(self.offers) > 1:
-                    did_i_opt_out = self.f_platform_choice(traveller=self)
-                elif len(self.offers) == 1:
-                    platform_id, offer = list(self.offers.items())[0]
-                    if self.f_trav_mode(traveller = self):
-                        self.sim.plats[platform_id].handle_rejected(offer['pax_id'])
-                        did_i_opt_out = True
+                if not self.my_schedule_triggered.triggered: # I was not a leader of the schedule, but I got assigned to some by someone else
+
+
+                    # print(self.offers)
+                    if len(self.offers) > 1:
+                        did_i_opt_out = self.f_platform_choice(traveller=self)
+                    elif len(self.offers) == 1:
+                        platform_id, offer = list(self.offers.items())[0]
+                        if self.f_trav_mode(traveller = self):
+                            self.sim.plats[platform_id].handle_rejected(offer['pax_id'])
+                            did_i_opt_out = True
+                        else:
+                            self.sim.plats[platform_id].handle_accepted(offer['pax_id'])
                     else:
-                        self.sim.plats[platform_id].handle_accepted(offer['pax_id'])
-                else:
-                    self.sim.logger.info("pax {:>4}  {:40} {}".format(self.id, 'has no offers ',
-                                                                      self.sim.print_now()))
-                    self.leave_queues()
-                    self.msg = 'lost his patience and left the system'
-                if len(self.offers) > 0:
-                    yield self.found_veh
+                        self.sim.logger.info("pax {:>4}  {:40} {}".format(self.id, 'has no offers ',
+                                                                        self.sim.print_now()))
+                        self.leave_queues()
+                        self.msg = 'lost his patience and left the system'
+                    if len(self.offers) > 0:
+                        yield self.found_veh
 
             else:
                 yield self.my_schedule_triggered | self.lost_shared_patience

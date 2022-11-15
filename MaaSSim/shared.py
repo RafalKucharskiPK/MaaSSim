@@ -22,6 +22,9 @@ def prep_shared_rides(_inData, sp, _print=False):
     :param _print:
     :return:
     """
+    def set_indexes(row):
+        # determines which rides contain this request
+        return _inData.sblts.rides[_inData.sblts.rides.apply(lambda x: row.pax_id in x.indexes, axis=1)].index.to_list()
 
     sp.share = sp.get('share', 0)  # share of shareable rides
     requests = _inData.requests
@@ -58,18 +61,22 @@ def prep_shared_rides(_inData, sp, _print=False):
         _inData.requests['position'] = r.position  # store ride index in requests for simulation
         _inData.sblts.schedule['sim_schedule'] = _inData.sblts.schedule.apply(lambda x: make_schedule_shared(x), axis=1)
 
+        # rides preparation for pricing Usman
         # prepare rides
-        schedule = _inData.sblts.rides
-        schedule['degree'] = schedule.apply(lambda row: len(row.indexes), axis=1)
+        rides = _inData.sblts.rides
+        rides['degree'] = rides.apply(lambda row: len(row.indexes), axis=1)
         r = _inData.sblts.requests
-        schedule['nodes'] = schedule.apply(lambda s: [None] + list(r.loc[s.indexes_orig].origin.values) +
+        rides['nodes'] = rides.apply(lambda s: [None] + list(r.loc[s.indexes_orig].origin.values) +
                                                      list(r.loc[s.indexes_dest].destination.values), axis=1)
 
-        schedule['req_id'] = schedule.apply(lambda s: [None] + s.indexes_orig + s.indexes_dest, axis=1)
+        rides['req_id'] = rides.apply(lambda s: [None] + s.indexes_orig + s.indexes_dest, axis=1)
 
-        _inData.requests['ride_id'] = r.ride_id  # store ride index in requests for simulation
-        _inData.requests['position'] = r.position  # store ride index in requests for simulation
-        _inData.sblts.rides['sim_schedule'] = _inData.sblts.rides.apply(lambda x: make_schedule_shared(x), axis=1)
+        _inData.requests['rides'] = _inData.requests.apply(set_indexes, axis=1) # assign rides to request (list of rides containing this request)
+        _inData.requests['position'] = 0  # this way all travllers will be triggered
+
+        _inData.sblts.rides['sim_schedule'] = _inData.sblts.rides.apply(lambda x: make_schedule_shared(x), axis=1) # do the schedules for all the rides
+
+
 
     def set_sim_schedule(x):
         if not x.shareable:
@@ -81,10 +88,9 @@ def prep_shared_rides(_inData, sp, _print=False):
 
     _inData.requests['sim_schedule'] = _inData.requests.apply(lambda x: set_sim_schedule(x), axis=1)
 
-    def set_indexes(row):
-        return _inData.sblts.rides[_inData.sblts.rides.apply(lambda x: row.pax_id in x.indexes, axis=1)].index.to_list()
+
     
-    _inData.requests['rides'] = _inData.requests.apply(set_indexes, axis=1)
+    
 
     _inData.schedules_queue = pd.DataFrame([[i, _inData.schedules[i].node[1]]
                                             for i in _inData.schedules.keys()],

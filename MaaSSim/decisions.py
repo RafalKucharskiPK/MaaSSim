@@ -9,6 +9,8 @@ import pandas as pd
 from dotmap import DotMap
 from numpy.random.mtrand import choice
 
+from MaaSSim.pool_price import pool_price_fun # import function to decide which shared ride to use
+
 from MaaSSim.driver import driverEvent
 from MaaSSim.traveller import travellerEvent
 
@@ -199,6 +201,9 @@ def f_match(**kwargs):
         veh = sim.vehs[veh_id]  # vehicle agent
 
         request = requests[requests.origin == reqPos].iloc[0]
+
+        request, sim = pool_price_fun(sim, veh, request)
+
         req_id = request.name
         simpaxes = request.sim_schedule.req_id.dropna().unique()
         simpax = sim.pax[simpaxes[0]]  # first traveller of shared ride (he is a leader and decision maker)
