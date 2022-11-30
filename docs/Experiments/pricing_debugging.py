@@ -88,8 +88,8 @@ for i in range(params.nV):
         break
 plot_veh(inData.G, df[df.veh ==2], lw = 1)
 
-#print(plot_veh)
+print(plot_veh)
 
-#self = sim.pax[0]
-#from MaaSSim.visualizations import plot_trip
-#plot_trip(sim, self.id)
+self = sim.pax[0]
+from MaaSSim.visualizations import plot_trip
+plot_trip(sim, self.id)
