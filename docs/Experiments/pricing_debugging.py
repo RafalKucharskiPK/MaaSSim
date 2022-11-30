@@ -54,13 +54,13 @@ params.shareability.without_matching = True
 
 inData = ExMAS.main(inData, params.shareability, plot=False) # create shareability graph (ExMAS) 
 
-prep_shared_rides = inData = prep_shared_rides(inData, params.shareability)  # prepare schedules
+prep_shared_rides = inData = prep_shared_rides(inData, params)  # prepare schedules
 print(prep_shared_rides) 
 
 print(inData.sblts.rides)
 
-Indexes = inData.sblts.schedule[['indexes']]
-print(Indexes)  
+#Indexes = inData.sblts.schedule[['indexes']]
+#print(Indexes)  
 
 # Simulate Result 
 
