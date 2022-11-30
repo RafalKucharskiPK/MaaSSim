@@ -74,6 +74,8 @@ def prep_shared_rides(_inData, sp, _print=False):
 
         _inData.requests['rides'] = _inData.requests.apply(set_indexes, axis=1) # assign rides to request (list of rides containing this request)
         _inData.requests['position'] = 0  # this way all travllers will be triggered
+        
+        _inData.sblts.rides['sim_schedule'] = _inData.sblts.rides.apply(lambda x: make_schedule_shared(x), axis=1) # do the schedules for all the rides
 
         _inData.sblts.rides['ttrav'] = _inData.sblts.rides.apply(lambda row: sum(row.times[1:]),
                                                                  axis=1)
