@@ -22,6 +22,7 @@ def prep_shared_rides(_inData, sp, _print=False):
     :param _print:
     :return:
     """
+    #sp = _params.shareability
     def set_indexes(row):
         # determines which rides contain this request
         return _inData.sblts.rides[_inData.sblts.rides.apply(lambda x: row.pax_id in x.indexes, axis=1)].index.to_list()
@@ -74,8 +75,12 @@ def prep_shared_rides(_inData, sp, _print=False):
         _inData.requests['rides'] = _inData.requests.apply(set_indexes, axis=1) # assign rides to request (list of rides containing this request)
         _inData.requests['position'] = 0  # this way all travllers will be triggered
 
-        _inData.sblts.rides['sim_schedule'] = _inData.sblts.rides.apply(lambda x: make_schedule_shared(x), axis=1) # do the schedules for all the rides
-
+        _inData.sblts.rides['ttrav'] = _inData.sblts.rides.apply(lambda row: sum(row.times[1:]),
+                                                                 axis=1)
+        _inData.sblts.rides['dist'] = _inData.sblts.rides.apply(lambda row:
+                                                                row.ttrav*sp.avg_speed/1000, axis=1) # in km
+        _inData.sblts.rides['fare'] = _inData.sblts.rides.apply(lambda row:
+                                                                row.dist*sp.price, axis=1)
 
 
     def set_sim_schedule(x):

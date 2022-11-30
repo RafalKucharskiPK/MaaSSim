@@ -54,13 +54,13 @@ params.shareability.without_matching = True
 
 inData = ExMAS.main(inData, params.shareability, plot=False) # create shareability graph (ExMAS) 
 
-prep_shared_rides = inData = prep_shared_rides(inData, params.shareability)  # prepare schedules
+prep_shared_rides = inData = prep_shared_rides(inData, params)  # prepare schedules
 print(prep_shared_rides) 
 
 print(inData.sblts.rides)
 
-Indexes = inData.sblts.schedule[['indexes']]
-print(Indexes)  
+#Indexes = inData.sblts.schedule[['indexes']]
+#print(Indexes)  
 
 # Simulate Result 
 
@@ -88,8 +88,8 @@ for i in range(params.nV):
         break
 plot_veh(inData.G, df[df.veh ==2], lw = 1)
 
-#print(plot_veh)
+print(plot_veh)
 
-#self = sim.pax[0]
-#from MaaSSim.visualizations import plot_trip
-#plot_trip(sim, self.id)
+self = sim.pax[0]
+from MaaSSim.visualizations import plot_trip
+plot_trip(sim, self.id)
