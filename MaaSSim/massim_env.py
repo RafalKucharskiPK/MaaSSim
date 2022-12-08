@@ -1,3 +1,4 @@
+import logging
 import threading
 from typing import Optional
 
@@ -37,6 +38,9 @@ class MaaSSimEnv(Env):
             "offer_fare": spaces.Box(low=0., high=300., shape=(1,), dtype=float64),
             "offer_travel_time": spaces.Box(low=0., high=300., shape=(1,), dtype=float64),
             "offer_wait_time": spaces.Box(low=0., high=300., shape=(1,), dtype=float64),
+            "vehicle_current_cords": spaces.Box(low=0., high=180., shape=(1, 2), dtype=float64),
+            "offer_origin_cords": spaces.Box(low=0., high=180., shape=(1, 2), dtype=float64),
+            "offer_target_cords": spaces.Box(low=0., high=180., shape=(1, 2), dtype=float64),
         })
         self.action_space = spaces.Discrete(2)
         self.action_to_decision = {
@@ -76,6 +80,7 @@ class MaaSSimEnv(Env):
         return current_observation, self.state.reward, self.done, {}
 
     def close(self):
+        logging.warning("Closing the simulation")
         self._close_simulation()
 
     def _wait_for_call_to_action(self) -> None:
@@ -113,6 +118,7 @@ def test_train() -> None:
     env = MaaSSimEnv()
     model = DQN("MultiInputPolicy", env, verbose=1, tensorboard_log="./dqn_maassim_tensorboard/")
     model.learn(total_timesteps=10)
+    env.close()
 
 
 if __name__ == '__main__':

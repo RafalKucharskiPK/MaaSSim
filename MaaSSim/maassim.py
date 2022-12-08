@@ -336,6 +336,7 @@ class GymSimulator(Simulator):
             user_controller_action_needed=user_controller_action_needed,
             user_controller_action_ready=user_controller_action_ready,
             state=state,
+            inData=_inData,
         )
         self.simulation_finished = simulation_finished
         super().__init__(
