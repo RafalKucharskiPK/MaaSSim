@@ -1,9 +1,9 @@
 {
   "NAME": "default",
-  "city": "Nootdorp, Netherlands",
-  "nP": 20,
-  "nV": 5,
-  "user_controlled_vehicles_count": 0,
+  "city": "Delft, Netherlands",
+  "nP": 2000,
+  "nV": 10,
+  "user_controlled_vehicles_count": 1,
   "times": {
     "request": 15,
     "transaction": 20,
@@ -18,8 +18,8 @@
   },
   "t0": "17:00",
   "paths": {
-    "G": "data/Nootdorp.graphml",
-    "skim": "data/Nootdorp.csv",
+    "G": "/Users/michaljuralowicz/MaaSSim-RL-powered-driver-agent/data/graphs/Delft.graphml",
+    "skim": "/Users/michaljuralowicz/MaaSSim-RL-powered-driver-agent/data/graphs/Delft.csv",
     "_ipython_display_": {},
     "_repr_mimebundle_": {},
     "_repr_html_": {},
@@ -35,7 +35,7 @@
   "dist_threshold": 100000,
   "big_time": 10,
   "sleep": false,
-  "simTime": 1,
+  "simTime": 5,
   "demand_structure": {
     "origins_dispertion": -0.0003,
     "destinations_dispertion": -0.001,

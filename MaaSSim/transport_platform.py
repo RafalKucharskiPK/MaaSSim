@@ -3,7 +3,7 @@
 # Platform agent
 # Rafal Kucharski @ TU Delft
 ################################################################################
-from .decisions import Offer
+from .decisions import Offer, OfferStatus
 from .driver import driverEvent, VehicleAgent
 from .traveller import travellerEvent
 import simpy
@@ -128,7 +128,7 @@ class PlatformAgent(object):
         :return:
         """
         offer = self.offers[offer_id]
-        offer['status'] = -1
+        offer['status'] = OfferStatus.REJECTED_BY_TRAVELLER
         veh = self.sim.vehs[offer['veh_id']]
         veh.update(event=driverEvent.IS_REJECTED_BY_TRAVELLER)
         self.tabu.append((offer['veh_id'], offer_id))  # they are unmatchable
@@ -147,7 +147,7 @@ class PlatformAgent(object):
         :return:
         """
         offer: Offer = self.offers[offer_id]
-        offer['status'] = -1
+        offer['status'] = OfferStatus.ACCEPTED
         veh: VehicleAgent = self.sim.vehs[offer['veh_id']]
 
         for i in offer['simpaxes']:
