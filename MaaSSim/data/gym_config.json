@@ -1,9 +1,9 @@
 {
   "NAME": "default",
   "city": "Nootdorp, Netherlands",
-  "nP": 20,
-  "nV": 5,
-  "user_controlled_vehicles_count": 0,
+  "nP": 10,
+  "nV": 1,
+  "user_controlled_vehicles_count": 1,
   "times": {
     "request": 15,
     "transaction": 20,

@@ -212,7 +212,7 @@ class PassengerAgent(object):
                 # print(self.offers)
                 if len(self.offers) > 1:
                     did_i_opt_out = self.f_platform_choice(traveller=self)
-                elif len(self.offers) == 1:
+                elif len(self.offers) == 1 and self.got_offered.triggered:  # TODO: Second condition looks like a hack
                     platform_id, offer = list(self.offers.items())[0]
                     if self.f_trav_mode(traveller = self):
                         self.sim.plats[platform_id].handle_rejected(offer['pax_id'])
