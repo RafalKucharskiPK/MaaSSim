@@ -1,15 +1,16 @@
 from __future__ import annotations
 
-import random
+import logging
 import threading
 from dataclasses import dataclass
 from typing import TypedDict, Optional
 
 import numpy as np
+import pandas as pd
 from dotmap import DotMap
-from numpy import ndarray
+from numpy import ndarray, float64
 
-from MaaSSim.decisions import Offer
+from MaaSSim.decisions import Offer, OfferStatus
 from MaaSSim.driver import VehicleAgent
 
 ACCEPT = False
@@ -23,6 +24,7 @@ class Observation(TypedDict):
     offer_target_cords: ndarray
     offer_origin_cords: ndarray
     vehicle_current_cords: ndarray
+    is_reposition: int
 
 
 def create_observation_from_input(veh: VehicleAgent, offer: Offer, inData: DotMap) -> Observation:
@@ -33,6 +35,33 @@ def create_observation_from_input(veh: VehicleAgent, offer: Offer, inData: DotMa
         vehicle_current_cords=inData.nodes[inData.nodes.index == veh.veh.pos][['x', 'y']].to_numpy(),
         offer_origin_cords=inData.nodes[inData.nodes.index == offer['request']['origin']][['x', 'y']].to_numpy(),
         offer_target_cords=inData.nodes[inData.nodes.index == offer['request']['destination']][['x', 'y']].to_numpy(),
+        is_reposition=0,
+    )
+
+
+def create_observation_from_reposition(veh: VehicleAgent, neighbor_position_index: int, inData: DotMap) -> Observation:
+    return Observation(
+        offer_fare=np.zeros(shape=(1,), dtype=float64),
+        offer_travel_time=pd.Timedelta(inData.skim[neighbor_position_index][veh.veh.pos], 's').floor('s').to_numpy(),
+        offer_wait_time=np.zeros(shape=(1,), dtype=float64),
+        offer_target_cords=inData.nodes[inData.nodes.index == neighbor_position_index][['x', 'y']].to_numpy(),
+        offer_origin_cords=inData.nodes[inData.nodes.index == veh.veh.pos][['x', 'y']].to_numpy(),
+        vehicle_current_cords=inData.nodes[inData.nodes.index == veh.veh.pos][['x', 'y']].to_numpy(),
+        is_reposition=1,
+    )
+
+
+def create_empty_reposition_offer() -> Offer:
+    return Offer(
+        pax_id=-1,
+        req_id=-1,
+        simpaxes=[],
+        veh_id=-1,
+        status=OfferStatus.ACCEPTED,
+        request=pd.Series(),
+        wait_time=0,
+        travel_time=0.,
+        fare=0.,
     )
 
 
@@ -73,12 +102,7 @@ class GymApiController:
         self.user_controller_action_ready.clear()
         return self.state.action
 
-    @staticmethod
-    def reposition_decision(veh: VehicleAgent) -> DotMap:
-        # TODO:
-        # empty offer is needed here
-        # create empty offer for every neighbour and check yield for every one of them
-        # below implementation is temporary
+    def reposition_decision(self, veh: VehicleAgent) -> DotMap:
         repos = DotMap()
         driver = veh
         sim = driver.sim
@@ -89,10 +113,19 @@ class GymApiController:
             repos.time = 300
             repos.flag = True
         else:
-            choice = random.randint(0, len(neighbors)+1)
+            choice = 0
+            for i, neighbor in enumerate(neighbors):
+                self.state.current_offer = create_empty_reposition_offer()
+                self.state.observation = create_observation_from_reposition(veh, neighbor, sim.inData)
+                self.user_controller_action_needed.set()
+                self.user_controller_action_ready.wait()
+                self.user_controller_action_ready.clear()
+                if self.state.action == ACCEPT:
+                    choice = i
             if choice == 0:
                 repos.flag = False
             else:
+                logging.info("Repositioning")
                 repos.pos = neighbors[choice]
                 repos.time = driver.sim.skims.ride[repos.pos][driver.veh.pos]
                 repos.flag = True

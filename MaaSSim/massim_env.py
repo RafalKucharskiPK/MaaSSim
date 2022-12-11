@@ -41,6 +41,7 @@ class MaaSSimEnv(Env):
             "vehicle_current_cords": spaces.Box(low=0., high=180., shape=(1, 2), dtype=float64),
             "offer_origin_cords": spaces.Box(low=0., high=180., shape=(1, 2), dtype=float64),
             "offer_target_cords": spaces.Box(low=0., high=180., shape=(1, 2), dtype=float64),
+            "is_reposition": spaces.Discrete(2),
         })
         self.action_space = spaces.Discrete(2)
         self.action_to_decision = {
