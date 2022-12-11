@@ -13,6 +13,7 @@ from numpy import ndarray, float64
 from MaaSSim.decisions import Offer, OfferStatus
 from MaaSSim.driver import VehicleAgent
 
+Action = bool
 ACCEPT = False
 DECLINE = True
 
@@ -40,9 +41,10 @@ def create_observation_from_input(veh: VehicleAgent, offer: Offer, inData: DotMa
 
 
 def create_observation_from_reposition(veh: VehicleAgent, neighbor_position_index: int, inData: DotMap) -> Observation:
+    travel_time = pd.Timedelta(inData.skim[neighbor_position_index][veh.veh.pos], 's').floor('s').total_seconds()
     return Observation(
         offer_fare=np.zeros(shape=(1,), dtype=float64),
-        offer_travel_time=pd.Timedelta(inData.skim[neighbor_position_index][veh.veh.pos], 's').floor('s').to_numpy(),
+        offer_travel_time=np.array([travel_time]).reshape(1),
         offer_wait_time=np.zeros(shape=(1,), dtype=float64),
         offer_target_cords=inData.nodes[inData.nodes.index == neighbor_position_index][['x', 'y']].to_numpy(),
         offer_origin_cords=inData.nodes[inData.nodes.index == veh.veh.pos][['x', 'y']].to_numpy(),
@@ -91,7 +93,7 @@ class GymApiController:
         self.state = state
         self.inData = inData
 
-    def incoming_offer_decision(self, veh: VehicleAgent, offer: Offer) -> bool:
+    def incoming_offer_decision(self, veh: VehicleAgent, offer: Offer) -> Action:
         self.state.current_offer = offer
         self.state.observation = create_observation_from_input(veh, offer, self.inData)
         # signals to GymAPI environment that action needs to be determined
@@ -132,5 +134,5 @@ class GymApiController:
         return repos
 
     @staticmethod
-    def drive_out_today_decision(veh: VehicleAgent) -> bool:
+    def drive_out_today_decision(veh: VehicleAgent) -> Action:
         return ACCEPT
