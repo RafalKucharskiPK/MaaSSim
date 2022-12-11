@@ -342,6 +342,7 @@ class GymSimulator(Simulator):
         super().__init__(
             _inData,
             f_user_controlled_driver_decline=self.gym_api_controller.incoming_offer_decision,
+            f_user_controlled_driver_repos=self.gym_api_controller.reposition_decision,
             **kwargs,
         )
 
