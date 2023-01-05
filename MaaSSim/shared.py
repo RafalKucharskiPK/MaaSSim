@@ -81,10 +81,15 @@ def prep_shared_rides(_inData, sp, _print=False):
                                                                  axis=1)
         _inData.sblts.rides['dist'] = _inData.sblts.rides.apply(lambda row:
                                                                 row.ttrav*sp.avg_speed/1000, axis=1) # in km
+       # Pricing strategy begins 
+       # Operating Cost  0.25/KM Euro (Arjan's Paper Journal ) 
         _inData.sblts.rides['fare'] = _inData.sblts.rides.apply(lambda row:
                                                                 row.dist*sp.price, axis=1)
+        _inData.sblts.rides['commission'] = _inData.sblts.rides.apply(lambda row:
+                                                                row.fare*sp.comm_rate, axis=1)
+        _inData.sblts.rides['driver_revenue'] = _inData.sblts.rides['fare'] - _inData.sblts.rides['commission']
 
-
+   
     def set_sim_schedule(x):
         if not x.shareable:
             return make_schedule_nonshared([x])
