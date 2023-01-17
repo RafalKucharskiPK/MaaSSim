@@ -1,8 +1,8 @@
 {
   "NAME": "default",
   "city": "Delft, Netherlands",
-  "nP": 100,
-  "nV": 200,
+  "nP": 50,
+  "nV": 400,
   "user_controlled_vehicles_count": 1,
   "times": {
     "request": 15,

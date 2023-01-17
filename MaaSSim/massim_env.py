@@ -29,6 +29,7 @@ class MaaSSimEnv(Env):
         0: DECLINE,
         1: ACCEPT,
     }
+
     def render(self, mode="human"):
         pass
 
@@ -184,15 +185,15 @@ def test_run() -> None:
     env.sim_daemon.join()
 
 
-def test_train() -> BaseAlgorithm:
-    env = DummyVecEnv([lambda: MaaSSimEnv()])
+def test_train(env_config_path: str, model_prefix: str) -> BaseAlgorithm:
+    env = DummyVecEnv([lambda: MaaSSimEnv(config_path=env_config_path)])
     env = VecNormalize(env, norm_obs=True, norm_reward=True, norm_obs_keys=[
         "offer_travel_time",
         "offer_wait_time",
     ])
-    model_name = datetime.now(tz=timezone.utc).strftime("%Y%m%dT%H%M%S")
+    model_name = datetime.now(tz=timezone.utc).strftime(f"{model_prefix}_%Y%m%dT%H%M%S")
     model = DQN("MultiInputPolicy", env, verbose=1, tensorboard_log="./dqn_maassim_tensorboard/")
-    model = model.learn(total_timesteps=1000)
+    model = model.learn(total_timesteps=100000)
     model.save(model_name)
     env.close()
     return model
@@ -237,5 +238,11 @@ def test_run_model(model: BaseAlgorithm, name: str) -> None:
 
 
 if __name__ == '__main__':
-    model = test_train()
-    test_run_model(model, "balanced_market")
+    configurations = [
+        ("data/gym_config_delft_balanced_market.json", "dqn_balanced_market"),
+        ("data/gym_config_delft_driver_market.json", "dqn_driver_market"),
+        ("data/gym_config_delft_passenger_market.json", "dqn_passenger_market"),
+    ]
+    for config_path, model_prefix in configurations:
+        model = test_train(config_path, model_prefix)
+        test_run_model(model, model_prefix)
