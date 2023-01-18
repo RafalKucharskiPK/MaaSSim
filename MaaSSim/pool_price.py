@@ -27,7 +27,7 @@ def pool_price_fun(sim, veh, request):
             still_available_rides = sim.inData.sblts.rides.loc[still_available_rides]
 
             #### HERE COMES YOUR CHOICE FUNCTIONS
-
+            #This is a random function. 
             #my_choice = still_available_rides.sample(1).squeeze() # random choice - to be overwritten with different func
             #==================================================================
             # add cost column to the still_available_rides - trip distance x cost per km (this is fixed)
