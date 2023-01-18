@@ -29,8 +29,14 @@ def pool_price_fun(sim, veh, request):
             #### HERE COMES YOUR CHOICE FUNCTIONS
 
             #my_choice = still_available_rides.sample(1).squeeze() # random choice - to be overwritten with different func
+            #==================================================================
+            # add cost column to the still_available_rides - trip distance x cost per km (this is fixed)
+            # add column profit to the still_available_rides - Revenue - cost
+            # driver chooses the ride with maximum profit
+            #==================================================================
+
             my_choice = still_available_rides[still_available_rides["driver_revenue"]==still_available_rides["driver_revenue"].max()].squeeze()
-            #print(my_choice)
+            # print(my_choice)
 
             logger('vehicle {} has chosen to serve request {} with a ride {} of degree {}, with travellers {}.'.format(veh.id, request.pax_id, my_choice.name, my_choice.degree, my_choice.indexes ))
 
