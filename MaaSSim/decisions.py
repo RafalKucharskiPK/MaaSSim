@@ -203,6 +203,9 @@ def f_match(**kwargs):
         request = requests[requests.origin == reqPos].iloc[0]
 
         request, sim = pool_price_fun(sim, veh, request)
+        print('Vehicle id =', veh_id)
+        
+        
 
         req_id = request.name
         simpaxes = request.sim_schedule.req_id.dropna().unique()
