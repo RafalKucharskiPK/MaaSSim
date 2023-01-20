@@ -34,9 +34,16 @@ def pool_price_fun(sim, veh, request):
             # add column profit to the still_available_rides - Revenue - cost
             # driver chooses the ride with maximum profit
             #==================================================================
+            still_available_rides["this_driver_revenue"] = still_available_rides["driver_revenue"] + dist[veh,ride_origin] # add distances to all the trip origins
+            # RK: TODO add fuel costs
 
-            my_choice = still_available_rides[still_available_rides["driver_revenue"]==still_available_rides["driver_revenue"].max()].squeeze()
+            #RK TODO: Compute costs: TIME + DISTANCE + FUEL + penalty for pooled rides
+
+            my_choice = still_available_rides[still_available_rides["this_driver_revenue"]==still_available_rides["this_driver_revenue"].max()].squeeze() # RK: Add the cost to arrive at origin (distance)
             # print(my_choice)
+
+            # MAKE TWO OPTIONS OF CHOICE: DETERMINISTIC AND PROBSBILISTIC:
+            # P(R)= exp(beta * Profit_R)/ sum_all the rides( exp(beta * Profit_R)
 
             logger('vehicle {} has chosen to serve request {} with a ride {} of degree {}, with travellers {}.'.format(veh.id, request.pax_id, my_choice.name, my_choice.degree, my_choice.indexes ))
 
