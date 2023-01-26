@@ -202,7 +202,7 @@ def f_match(**kwargs):
 
         request = requests[requests.origin == reqPos].iloc[0]
 
-        request, sim = pool_price_fun(sim, veh, request)
+        request, sim = pool_price_fun(sim, veh, request, sim.params.shareability)
         #print('Vehicle id =', veh_id)
         
         

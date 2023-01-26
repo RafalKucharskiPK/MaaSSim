@@ -5,7 +5,7 @@
 # Rafal Kucharski @ Jagiellonian University
 ################################################################################
 
-def pool_price_fun(sim, veh, request):
+def pool_price_fun(sim, veh, request, sp):
     # function used inside the f_match to update the choice of the driver (pool/single)
 
     logger = sim.logger.critical # set what do you wantto see from the logger
@@ -25,21 +25,30 @@ def pool_price_fun(sim, veh, request):
         if len(still_available_rides)>1: # only if we still have a choice
             
             still_available_rides = sim.inData.sblts.rides.loc[still_available_rides]
-
+            
+           
             #### HERE COMES YOUR CHOICE FUNCTIONS
             #This is a random function. 
-            #my_choice = still_available_rides.sample(1).squeeze() # random choice - to be overwritten with different func
+            
+            still_available_rides['pickup_dist'] = still_available_rides.apply(lambda row: sim.inData.skim[veh.veh.pos][row.nodes[1]], axis=1) # distance from driver initial position to the first pickup point
+            still_available_rides['trav_dist'] = still_available_rides['dist'] + still_available_rides['pickup_dist'] # distance from driver's initial position to the drop off point of the last passenger
+            
+            still_available_rides["operating_cost"] = still_available_rides["pickup_dist"].apply(lambda x : x*sp.operating_cost)
+            still_available_rides["profit"] = still_available_rides["driver_revenue"] - still_available_rides["operating_cost"]
+            
+            my_choice = still_available_rides[still_available_rides["profit"]==still_available_rides["profit"].max()].squeeze() # random choice - to be overwritten with different func
             #==================================================================
             # add cost column to the still_available_rides - trip distance x cost per km (this is fixed)
             # add column profit to the still_available_rides - Revenue - cost
             # driver chooses the ride with maximum profit
             #==================================================================
-            still_available_rides["this_driver_revenue"] = still_available_rides["driver_revenue"] + dist[veh,ride_origin] # add distances to all the trip origins
+#             still_available_rides["this_driver_revenue"] = still_available_rides["driver_revenue"] + dist[veh,ride_origin] # add distances to all the trip origins
+#              my_choice = still_available_rides[still_available_rides["profit"]==still_available_rides["profit"].max()].squeeze()
             # RK: TODO add fuel costs
-
+            
             #RK TODO: Compute costs: TIME + DISTANCE + FUEL + penalty for pooled rides
-
-            my_choice = still_available_rides[still_available_rides["this_driver_revenue"]==still_available_rides["this_driver_revenue"].max()].squeeze() # RK: Add the cost to arrive at origin (distance)
+            # still_available_rides["all_cost"] =  still_available_rides["cost"].apply(lambda x : x + penalty) # time and fuel are left
+#             my_choice = still_available_rides[still_available_rides["this_driver_revenue"]==still_available_rides["this_driver_revenue"].max()].squeeze() # RK: Add the cost to arrive at origin (distance)
             # print(my_choice)
 
             # MAKE TWO OPTIONS OF CHOICE: DETERMINISTIC AND PROBSBILISTIC:
