@@ -69,27 +69,9 @@ print("MaaSSIm Simulation Begins")
 sim = simulate(params = params, inData = inData, logger_level = logging.WARNING) # simulate
 print(sim)  
 
-pax = sim.inData.requests.position
-print(pax)
+#print(sim.veh[1].veh.pos)#sim.vehs[1].veh.pos
 
 
-df = sim.runs[0].rides
-df[df.veh==1]
-print(df)
 
-trips = sim.runs[0].trips
-trips[trips.pax==8]
-trips[trips.pax==0]
-print(trips)
 
-for i in range(params.nV):
-    paxes = df[df.veh==i].paxes
-    if paxes.apply(lambda x: len(x)).max()>1:
-        break
-plot_veh(inData.G, df[df.veh ==2], lw = 1)
 
-print(plot_veh)
-
-self = sim.pax[0]
-from MaaSSim.visualizations import plot_trip
-plot_trip(sim, self.id)
