@@ -87,6 +87,8 @@ def kpi_veh(*args, **kwargs):
     ret = ret[['nRIDES', 'nREJECTED', 'OUT'] + [_.name for _ in driverEvent]].fillna(0)  # nans become 0
 
     # meaningful names
+    
+    
     ret['TRAVEL'] = ret['ARRIVES_AT_DROPOFF']  # time with traveller (paid time)
     ret['WAIT'] = ret['MEETS_TRAVELLER_AT_PICKUP']  # time waiting for traveller (by default zero)
     ret['CRUISE'] = ret['ARRIVES_AT_PICKUP'] + ret['REPOSITIONED']  # time to arrive for traveller
@@ -94,37 +96,15 @@ def kpi_veh(*args, **kwargs):
     ret['IDLE'] = ret['ENDS_SHIFT'] - ret['OPENS_APP'] - ret['OPERATIONS'] - ret['CRUISE'] - ret['WAIT'] - ret['TRAVEL']
 
     ret['PAX_KM'] = ret.apply(lambda x: sim.inData.requests.loc[sim.runs[0].trips[
-        sim.runs[0].trips.veh_id == x.name].pax.unique()].dist.sum() / 1000, axis=1)
-#     ret.apply(lambda x: print(sim.inData.platforms.loc[sim.inData.vehicles.loc[x.name].platform]))
-#     print(sim.inData.platforms.loc[sim.inData.vehicles.loc['name'].platform])
- 
-    rides = sim.inData.sblts.rides
-    profits_idx = []
-    for i in range(1, len(ret.index)+1):
-        profits_idx.append((max(pd.DataFrame(sim.vehs[i].myrides)['paxes'].to_list())))
-    print(profits_idx)
-    profits = []
-    for i in profits_idx:
-        row = sim.inData.sblts.rides['indexes_orig'].apply(lambda x: x == i)
-
-        profits.append(sim.inData.sblts.rides[row.values]['driver_revenue'].to_list()[0] if sim.inData.sblts.rides[row.values]['driver_revenue'].to_list() else 0)
-
-    
-    
-    
-#     ret['REVENUE'] = ret.apply(lambda x: sim.inData.platforms.loc[sim.inData.vehicles.loc[
-#         x.name].platform].fare, axis=1)
-    ret['REVENUE'] = profits
+    sim.runs[0].trips.veh_id == x.name].pax.unique()].dist.sum() / 1000, axis=1)
+    ret['REVENUE'] = ret.apply(lambda x: sim.inData.platforms.loc[sim.inData.vehicles.loc[
+        x.name].platform].fare, axis=1)
+    ret['REVENUE'] = ret['REVENUE'] * ret['PAX_KM']
     ret.index.name = 'veh'
-    total_rev = ret['REVENUE'].sum()
+    
+    
 
     # KPIs
     kpi = ret.agg(['sum', 'mean', 'std'])
     kpi['nV'] = ret.shape[0]
-    return {'veh_exp': ret, 'veh_kpi': kpi, 'all_kpi': total_rev}
-
-
-
-
-
-
+    return {'veh_exp': ret, 'veh_kpi': kpi}
