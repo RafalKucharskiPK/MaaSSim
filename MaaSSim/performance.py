@@ -9,6 +9,8 @@
 from .traveller import travellerEvent
 from .driver import driverEvent
 import pandas as pd
+import matplotlib.pyplot as plt
+
 
 
 def kpi_pax(*args,**kwargs):
@@ -97,7 +99,8 @@ def kpi_veh(*args, **kwargs):
         sim.runs[0].trips.veh_id == x.name].pax.unique()].dist.sum() / 1000, axis=1)
 #     ret.apply(lambda x: print(sim.inData.platforms.loc[sim.inData.vehicles.loc[x.name].platform]))
 #     print(sim.inData.platforms.loc[sim.inData.vehicles.loc['name'].platform])
- 
+    
+    
     rides = sim.inData.sblts.rides
     profits_idx = []
     for i in range(1, len(ret.index)+1):
@@ -118,6 +121,19 @@ def kpi_veh(*args, **kwargs):
     ret.index.name = 'veh'
     total_rev = ret['REVENUE'].sum()
 
+    # plot graph of driver revenue
+    vehicles  = list(sim.vehs.keys())
+    fig, ax = plt.subplots(figsize = (10,5))
+    bars = ax.barh(vehicles, profits)
+    ax.bar_label(bars)
+    for bars in ax.containers:
+        ax.bar_label(bars)
+    
+
+    plt.xlabel("Revenue")
+    plt.ylabel("Vehicles")
+    plt.title("revenue against driver")
+    plt.show()
     # KPIs
     kpi = ret.agg(['sum', 'mean', 'std'])
     kpi['nV'] = ret.shape[0]
