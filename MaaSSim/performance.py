@@ -122,18 +122,18 @@ def kpi_veh(*args, **kwargs):
     total_rev = ret['REVENUE'].sum()
 
     # plot graph of driver revenue
-    vehicles  = list(sim.vehs.keys())
-    fig, ax = plt.subplots(figsize = (10,5))
-    bars = ax.barh(vehicles, profits)
-    ax.bar_label(bars)
-    for bars in ax.containers:
-        ax.bar_label(bars)
+   # vehicles  = list(sim.vehs.keys())
+   # fig, ax = plt.subplots(figsize = (10,5))
+    #bars = ax.barh(vehicles, profits)
+   # ax.bar_label(bars)
+   # for bars in ax.containers:
+   #     ax.bar_label(bars)
     
 
-    plt.xlabel("Revenue")
-    plt.ylabel("Vehicles")
-    plt.title("revenue against driver")
-    plt.show()
+    #plt.xlabel("Revenue")
+   # plt.ylabel("Vehicles")
+   # plt.title("revenue against driver")
+   # plt.show()
     # KPIs
     kpi = ret.agg(['sum', 'mean', 'std'])
     kpi['nV'] = ret.shape[0]
