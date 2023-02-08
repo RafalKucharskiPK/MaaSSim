@@ -120,7 +120,7 @@ def kpi_veh(*args, **kwargs):
     ret['REVENUE'] = profits
     ret.index.name = 'veh'
     total_rev = ret['REVENUE'].sum()
-
+# This is a code for plotting
     # plot graph of driver revenue
    # vehicles  = list(sim.vehs.keys())
    # fig, ax = plt.subplots(figsize = (10,5))
