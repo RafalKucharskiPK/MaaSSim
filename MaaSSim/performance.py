@@ -118,9 +118,11 @@ def kpi_veh(*args, **kwargs):
 #     ret['REVENUE'] = ret.apply(lambda x: sim.inData.platforms.loc[sim.inData.vehicles.loc[
 #         x.name].platform].fare, axis=1)
     ret['REVENUE'] = profits
+    ret['nREJECTS'] = df[df.event==driverEvent.REJECTS_REQUEST.name].groupby(['veh']).size().reindex(ret.index)
     ret.index.name = 'veh'
     total_rev = ret['REVENUE'].sum()
 # This is a code for plotting
+#plotting seaborn
     # plot graph of driver revenue
    # vehicles  = list(sim.vehs.keys())
    # fig, ax = plt.subplots(figsize = (10,5))
