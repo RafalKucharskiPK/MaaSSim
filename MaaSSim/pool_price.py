@@ -13,7 +13,7 @@ def pool_price_fun(sim, veh, request, sp):
     print(sp.operating_cost)
 
 
-    # Added title
+    # Added
     # function used inside the f_match to update the choice of the driver (pool/single)
 
     logger = sim.logger.critical # set what do you wantto see from the logger
