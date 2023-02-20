@@ -18,8 +18,8 @@
   },
   "t0": "17:00",
   "paths": {
-    "G": "/Users/michaljuralowicz/MaaSSim-RL-powered-driver-agent/data/graphs/Delft.graphml",
-    "skim": "/Users/michaljuralowicz/MaaSSim-RL-powered-driver-agent/data/graphs/Delft.csv",
+    "G": "data/graphs/Delft.graphml",
+    "skim": "data/graphs/Delft.csv",
     "_ipython_display_": {},
     "_repr_mimebundle_": {},
     "_repr_html_": {},

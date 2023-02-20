@@ -192,8 +192,8 @@ def test_train(env_config_path: str, model_prefix: str) -> BaseAlgorithm:
         "offer_wait_time",
     ])
     model_name = datetime.now(tz=timezone.utc).strftime(f"{model_prefix}_%Y%m%dT%H%M%S")
-    model = DQN("MultiInputPolicy", env, verbose=1, tensorboard_log="./dqn_maassim_tensorboard/")
-    model = model.learn(total_timesteps=100000)
+    model = DQN("MultiInputPolicy", env, verbose=1, tensorboard_log="./dqn_maassim_tensorboard/", learning_starts=2500)
+    model = model.learn(total_timesteps=5000)
     model.save(model_name)
     env.close()
     return model
@@ -237,7 +237,7 @@ def test_run_model(model: BaseAlgorithm, name: str) -> None:
     env.close()
 
 
-if __name__ == '__main__':
+def main():
     configurations = [
         ("data/gym_config_delft_balanced_market.json", "dqn_balanced_market"),
         ("data/gym_config_delft_driver_market.json", "dqn_driver_market"),
@@ -246,3 +246,7 @@ if __name__ == '__main__':
     for config_path, model_prefix in configurations:
         model = test_train(config_path, model_prefix)
         test_run_model(model, model_prefix)
+
+
+if __name__ == '__main__':
+    main()
