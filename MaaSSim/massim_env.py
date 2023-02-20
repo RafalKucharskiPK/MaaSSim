@@ -1,7 +1,10 @@
 import logging
 import threading
+from datetime import datetime, timezone
+from pathlib import Path
 from typing import Optional, Tuple, List, Dict, Any
 
+import numpy as np
 import pandas as pd
 import seaborn as sns
 import time
@@ -10,9 +13,11 @@ from gym.core import Env
 from matplotlib import pyplot as plt
 from numpy import float64
 from stable_baselines3 import DQN
+from stable_baselines3.common.base_class import BaseAlgorithm
 from stable_baselines3.common.callbacks import BaseCallback
 from stable_baselines3.common.env_checker import check_env
 from stable_baselines3.common.logger import Figure
+from stable_baselines3.common.vec_env import VecNormalize, DummyVecEnv
 
 from MaaSSim.controllers.gym_api_controller import GymApiControllerState, ACCEPT, DECLINE, Observation, Action
 from MaaSSim.decisions import OfferStatus
@@ -20,16 +25,21 @@ from MaaSSim.simulators import prepare_gym_simulator
 
 
 class MaaSSimEnv(Env):
+    action_to_decision = {
+        0: DECLINE,
+        1: ACCEPT,
+    }
+
     def render(self, mode="human"):
         pass
 
-    def __init__(self, render_mode=None) -> None:
+    def __init__(self, render_mode: Optional[str] = None, config_path: str = "data/gym_config_delft_balanced_market.json") -> None:
         self.user_controller_action_needed = threading.Event()
         self.user_controller_action_ready = threading.Event()
         self.simulation_finished = threading.Event()
         self.state = GymApiControllerState()
         self.sim = prepare_gym_simulator(
-            config="data/gym_config_delft.json",
+            config=config_path,
             user_controller_action_needed=self.user_controller_action_needed,
             user_controller_action_ready=self.user_controller_action_ready,
             simulation_finished=self.simulation_finished,
@@ -50,10 +60,6 @@ class MaaSSimEnv(Env):
             "is_reposition": spaces.Discrete(2),
         })
         self.action_space = spaces.Discrete(2)
-        self.action_to_decision = {
-            0: DECLINE,
-            1: ACCEPT,
-        }
 
     def reset(
             self,
@@ -179,12 +185,68 @@ def test_run() -> None:
     env.sim_daemon.join()
 
 
-def test_train() -> None:
-    env = MaaSSimEnv()
-    model = DQN("MultiInputPolicy", env, verbose=1, tensorboard_log="./dqn_maassim_tensorboard/")
-    model.learn(total_timesteps=10000, callback=FigureRecorderCallback(env))
+def test_train(env_config_path: str, model_prefix: str) -> BaseAlgorithm:
+    env = DummyVecEnv([lambda: MaaSSimEnv(config_path=env_config_path)])
+    env = VecNormalize(env, norm_obs=True, norm_reward=True, norm_obs_keys=[
+        "offer_travel_time",
+        "offer_wait_time",
+    ])
+    model_name = datetime.now(tz=timezone.utc).strftime(f"{model_prefix}_%Y%m%dT%H%M%S")
+    model = DQN("MultiInputPolicy", env, verbose=1, tensorboard_log="./dqn_maassim_tensorboard/", learning_starts=2500)
+    model = model.learn(total_timesteps=5000)
+    model.save(model_name)
+    env.close()
+    return model
+
+
+def test_run_model(model: BaseAlgorithm, name: str) -> None:
+    day = 0
+
+    def _create_row(observation: Observation, action: np.ndarray, decision_id: int) -> Dict[str, float]:
+        return {
+            'day': day,
+            'decision_id': decision_id,
+            'is_reposition': bool(observation['is_reposition']),
+            'offer_fare': float(observation['offer_fare']),
+            'offer_travel_time': float(observation['offer_travel_time']),
+            'offer_wait_time': float(observation['offer_wait_time']),
+            'vehicle_cords_x': float(observation['vehicle_current_cords'][0][0][0]),
+            'vehicle_cords_y': float(observation['vehicle_current_cords'][0][0][1]),
+            'offer_origin_cords_x': float(observation['offer_origin_cords'][0][0][0]),
+            'offer_origin_cords_y': float(observation['offer_origin_cords'][0][0][1]),
+            'offer_target_cords_x': float(observation['offer_target_cords'][0][0][0]),
+            'offer_target_cords_y': float(observation['offer_target_cords'][0][0][1]),
+            'action': MaaSSimEnv.action_to_decision.get(int(action)),
+        }
+
+    print("Test run of the model initiated")
+    env = model.get_env()
+    obs = env.reset()
+    observations_with_action = []
+    for i in range(1000):
+        action, _states = model.predict(obs)
+        observations_with_action.append(_create_row(obs, action[0], i))
+        print(action)
+        obs, rewards, dones, info = env.step(action)
+        if dones[0]:
+            day += 1
+    logs_parent = Path("./decision_logs")
+    logs_parent.mkdir(exist_ok=True)
+    with open(logs_parent.joinpath(f"{name}.csv"), "w+") as f:
+        pd.DataFrame.from_records(observations_with_action).to_csv(f, index=False)
     env.close()
 
 
+def main():
+    configurations = [
+        ("data/gym_config_delft_balanced_market.json", "dqn_balanced_market"),
+        ("data/gym_config_delft_driver_market.json", "dqn_driver_market"),
+        ("data/gym_config_delft_passenger_market.json", "dqn_passenger_market"),
+    ]
+    for config_path, model_prefix in configurations:
+        model = test_train(config_path, model_prefix)
+        test_run_model(model, model_prefix)
+
+
 if __name__ == '__main__':
-    test_train()
+    main()
