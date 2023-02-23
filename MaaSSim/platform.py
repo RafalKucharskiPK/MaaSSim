@@ -116,7 +116,7 @@ class PlatformAgent(object):
 
     def updateQs(self):
         """
-        Tracks queue lengths whenever they change
+        The data Tracks queue lengths whenever they change
         :return:
         """
         if self.monitor:
