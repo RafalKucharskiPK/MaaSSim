@@ -7,7 +7,6 @@
 
 import logging
 import os.path
-import threading
 import zipfile
 from pathlib import Path
 
@@ -20,7 +19,6 @@ import sys
 import time
 from dotmap import DotMap
 
-from MaaSSim.controllers.gym_api_controller import GymApiController, GymApiControllerState
 from MaaSSim.decisions import f_dummy_repos, f_match, dummy_False
 from MaaSSim.driver import VehicleAgent
 from MaaSSim.performance import kpi_pax, kpi_veh
@@ -320,33 +318,3 @@ class Simulator:
     def plot_trip(self, pax_id, run_id=None):
         from MaaSSim.visualizations import plot_trip
         plot_trip(self,pax_id, run_id = run_id)
-
-
-class GymSimulator(Simulator):
-    def __init__(
-            self,
-            user_controller_action_needed: threading.Event,
-            user_controller_action_ready: threading.Event,
-            simulation_finished: threading.Event,
-            state: GymApiControllerState,
-            _inData,
-            **kwargs,
-    ) -> None:
-        self.gym_api_controller = GymApiController(
-            user_controller_action_needed=user_controller_action_needed,
-            user_controller_action_ready=user_controller_action_ready,
-            state=state,
-            inData=_inData,
-        )
-        self.simulation_finished = simulation_finished
-        super().__init__(
-            _inData,
-            f_user_controlled_driver_decline=self.gym_api_controller.incoming_offer_decision,
-            f_user_controlled_driver_repos=self.gym_api_controller.reposition_decision,
-            **kwargs,
-        )
-
-    def make_and_run(self, run_id=None, **kwargs):
-        # wrapper for the simulation routine
-        super().make_and_run(run_id, **kwargs)
-        self.simulation_finished.set()

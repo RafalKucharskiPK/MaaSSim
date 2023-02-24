@@ -1,0 +1,4 @@
+pillow==9.3.0
+gym==0.21
+stable-baselines3==1.6.2
+tensorboard==2.11.0
