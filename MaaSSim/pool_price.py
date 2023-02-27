@@ -90,7 +90,7 @@ def pool_price_fun(sim, veh, request, sp):
             # MAKE TWO OPTIONS OF CHOICE: DETERMINISTIC AND PROBSBILISTIC:
             # P(R)= exp(beta * Profit_R)/ sum_all the rides( exp(beta * Profit_R)
 
-            logger('vehicle {} has chosen to serve request {} with a ride {} of degree {}, with travellers {}.'.format(veh.id, request.pax_id, my_choice.name, my_choice.degree, my_choice.indexes ))
+            #logger('vehicle {} has chosen to serve request {} with a ride {} of degree {}, with travellers {}.'.format(veh.id, request.pax_id, my_choice.degree ))
 
             # set the schedule of this request - to be used in simulations
             for pax in my_choice.indexes:

@@ -22,7 +22,7 @@ params = get_config('D:/Development/MaaSSim/data/config/delft.json')  # load con
 
 params.times.pickup_patience = 3600 # 1 hour of simulation
 params.simTime = 4 # 6 minutes hour of simulation
-params.nP = 400 # reuqests (and passengers)
+params.nP = 40 # reuqests (and passengers)
 params.nV = 20 # vehicles
 
 params.t0 = pd.Timestamp.now()
@@ -59,6 +59,10 @@ params.shareability.without_matching = True
 
 inData = ExMAS.main(inData, params.shareability, plot=False) # create shareability graph (ExMAS) 
 
+inData = prep_shared_rides(inData, params.shareability) # prepare schedules
+
+inData.sblts.rides
+
 print("MaaSSIm Simulation Begins")  
 
 # Profit Maximization 
@@ -75,6 +79,8 @@ sim.res[0].all_kpi # All driver revenue
 
 print(sim.res[0])
 
+
+
 # Solo ride-hailing
 
 params.kpi = 2
@@ -85,10 +91,9 @@ sim.res[0].veh_exp['REVENUE'].to_list()
 
 print(sim.res[0].veh_exp['REVENUE'].to_list())
 
-
 sim.res[0].all_kpi # All driver revenue 
 
-print(sim.res[0])
+print(sim.res[0].all_kpi)
 
 
 # Nearest pickup ride-pooling
@@ -106,22 +111,5 @@ total = sim.res[0].all_kpi # All driver revenue
 print(total)
 
 
-responses = []
-avg_kpi = []
-idle_time = []
-
-for i in range(1, 4):
-    params.kpi = i
-    sim = simulate(params = params, inData = inData, logger_level = logging.WARNING) # simulate
-    sim.res[0].veh_exp['Vehicles'] = sim.res[0].veh_exp.index
-    sim.res[0].veh_exp['ds'] = f"{i}"
-    
-    responses.append(sim.res[0].veh_exp)
-    
-vehicles = sim.res[0].veh_exp.loc[sim.res[0].veh_exp["nRIDES"] > 0]
-no_of_veh = len(vehicles)
-    
-avg_kpi.append(sim.res[0].all_kpi/no_of_veh)
-idle_time.append(vehicles['IDLE'].sum()/no_of_veh)
 
 
