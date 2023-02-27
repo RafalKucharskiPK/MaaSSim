@@ -1,4 +1,3 @@
-
 import os, sys # add MaaSSim to path (not needed if MaaSSim is already in path)
 #from envs.MaaSSim.Lib.mailcap import show
 module_path = os.path.abspath(os.path.join('../..'))
@@ -39,6 +38,8 @@ params.shareability.nP = params.nP
 params.shareability.share = 1
 params.shareability.without_matching = True
 
+params.shareability.comm_rate = 0.2
+
 inData = load_G(inData, params)  # load network graph 
 
 inData = generate_demand(inData, params, avg_speed = False)
@@ -54,24 +55,12 @@ params.shareability.without_matching = True
 
 inData = ExMAS.main(inData, params.shareability, plot=False) # create shareability graph (ExMAS) 
 
+
+
 prep_shared_rides = inData = prep_shared_rides(inData, params)  # prepare schedules
-print(prep_shared_rides) 
-
-print(inData.sblts.rides)
-
-#Indexes = inData.sblts.schedule[['indexes']]
-#print(Indexes)  
-
-# Simulate Result 
-
 print("MaaSSIm Simulation Begins")  
 
 sim = simulate(params = params, inData = inData, logger_level = logging.WARNING) # simulate
 print(sim)  
 
-#print(sim.veh[1].veh.pos)#sim.vehs[1].veh.pos
-
-
-
-
-
+print(pd.DataFrame(sim.vehs[3].myrides))
