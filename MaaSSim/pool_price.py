@@ -5,7 +5,15 @@
 # Rafal Kucharski @ Jagiellonian University
 ################################################################################
 import numpy as np
+import os
+import json 
+
 def pool_price_fun(sim, veh, request, sp):
+    kpi_type = sim.params.kpi
+    print(sp.operating_cost)
+
+
+    # Added
     # function used inside the f_match to update the choice of the driver (pool/single)
 
     logger = sim.logger.critical # set what do you wantto see from the logger
@@ -44,8 +52,20 @@ def pool_price_fun(sim, veh, request, sp):
                 
                 my_choice = still_available_rides.sample(1,weights='probability')
             else:
-                my_choice = still_available_rides[still_available_rides["profit"]==still_available_rides["profit"].max()].squeeze() # random choice - to be overwritten with different func
-            
+                # select by max profit
+                if kpi_type == 1:
+                    my_choice = still_available_rides[still_available_rides["profit"]==still_available_rides["profit"].max()].squeeze() 
+                
+                # select by max profit on pooled rides
+                elif kpi_type == 2:
+                    rf = still_available_rides[(still_available_rides['indexes_orig'].map(len) == 1)]
+                    my_choice = rf[rf['profit']==rf['profit'].max()].iloc[0]
+                    
+                # select by max profit on private rides
+                elif kpi_type == 3:
+                    print("hell")
+                    rf = still_available_rides[(still_available_rides['indexes_orig'].map(len) > 1)]
+                    my_choice = rf[rf['profit']==rf['profit'].max()].iloc[0]
                 
                 
             

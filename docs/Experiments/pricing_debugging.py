@@ -1,43 +1,46 @@
 
 import os, sys # add MaaSSim to path (not needed if MaaSSim is already in path)
-#from envs.MaaSSim.Lib.mailcap import show
 module_path = os.path.abspath(os.path.join('../..'))
 if module_path not in sys.path:
     sys.path.append(module_path)
     
-# Prepare 
-
 from MaaSSim.utils import get_config, load_G, prep_supply_and_demand, generate_demand, generate_vehicles, initialize_df  # simulator
 from MaaSSim.data_structures import structures as inData
 from MaaSSim.simulators import simulate
 from MaaSSim.visualizations import plot_veh
 from MaaSSim.shared import prep_shared_rides
 import logging
+import matplotlib.pyplot as plt
 
 import pandas as pd
 import ExMAS
 
-params = get_config('D:/Development/MaaSSim/data/config/Nootdorp.json')  # load configuration
+
+# Delft
+
+params = get_config('D:/Development/MaaSSim/data/config/delft.json')  # load configuration
 
 params.times.pickup_patience = 3600 # 1 hour of simulation
-params.simTime = 0.1 # 6 minutes hour of simulation
-params.nP = 10 # reuqests (and passengers)
-params.nV = 10 # vehicles
+params.simTime = 4 # 6 minutes hour of simulation
+params.nP = 20 # reuqests (and passengers)
+params.nV = 20 # vehicles
 
 params.t0 = pd.Timestamp.now()
 params.shareability.avg_speed = params.speeds.ride
-params.shareability.shared_discount = 0.3
+params.shareability.shared_discount = 0.25
 params.shareability.delay_value = 1
 params.shareability.WtS = 1.3
 params.shareability.price = 1.5 #eur/km
 params.shareability.VoT = 0.0035 #eur/s
-params.shareability.matching_obj = 'u_pax' #minimize VHT for vehicles
+params.shareability.matching_obj = 'u_veh' #minimize VHT for vehicles
 params.shareability.pax_delay = 0
 params.shareability.horizon = 600
 params.shareability.max_degree = 4
 params.shareability.nP = params.nP
 params.shareability.share = 1
 params.shareability.without_matching = True
+params.shareability.operating_cost = 0.5
+params.shareability.comm_rate = 0.2
 
 inData = load_G(inData, params)  # load network graph 
 
@@ -52,26 +55,53 @@ params.shareability.share = 1
 params.shareability.without_matching = True
 
 
+
+
 inData = ExMAS.main(inData, params.shareability, plot=False) # create shareability graph (ExMAS) 
-
-prep_shared_rides = inData = prep_shared_rides(inData, params)  # prepare schedules
-print(prep_shared_rides) 
-
-print(inData.sblts.rides)
-
-#Indexes = inData.sblts.schedule[['indexes']]
-#print(Indexes)  
-
-# Simulate Result 
 
 print("MaaSSIm Simulation Begins")  
 
+# Profit Maximization 
+
+params.kpi = 1
+
 sim = simulate(params = params, inData = inData, logger_level = logging.WARNING) # simulate
-print(sim)  
 
-#print(sim.veh[1].veh.pos)#sim.vehs[1].veh.pos
+sim.res[0].veh_exp['REVENUE'].to_list()
+
+print(sim.res[0].veh_exp['REVENUE'].to_list())
+
+sim.res[0].all_kpi # All driver revenue 
+
+print(sim.res[0].all_kpi)
+
+# Solo ride-hailing
+
+params.kpi = 2
+
+sim = simulate(params = params, inData = inData, logger_level = logging.WARNING) # simulate
+
+sim.res[0].veh_exp['REVENUE'].to_list()
+
+print(sim.res[0].veh_exp['REVENUE'].to_list())
+
+sim.res[0].all_kpi # All driver revenue 
+
+print(sim.res[0].all_kpi)
 
 
+# Nearest pickup ride-pooling
 
+params.kpi = 3
+
+sim = simulate(params = params, inData = inData, logger_level = logging.WARNING) # simulate
+
+sim.res[0].veh_exp['REVENUE'].to_list()
+
+print(sim.res[0].veh_exp['REVENUE'].to_list())
+
+total = sim.res[0].all_kpi # All driver revenue 
+
+print(total)
 
 
