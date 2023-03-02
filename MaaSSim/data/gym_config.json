@@ -1,9 +1,9 @@
 {
   "NAME": "default",
-  "city": "Delft, Netherlands",
-  "nP": 20,
-  "nV": 5,
-  "user_controlled_vehicles_count": 0,
+  "city": "Nootdorp, Netherlands",
+  "nP": 10,
+  "nV": 1,
+  "user_controlled_vehicles_count": 1,
   "times": {
     "request": 15,
     "transaction": 20,
@@ -18,11 +18,8 @@
   },
   "t0": "17:00",
   "paths": {
-    "main": "/Users/rkucharski/Documents/GitHub/MaaSSim",
-    "data": "/Users/rkucharski/Documents/GitHub/MaaSSim/data",
-    "params": "/Users/rkucharski/Documents/GitHub/MaaSSim/data/configs",
-    "G": "../../data/graphs/Delft.graphml",
-    "skim": "../../data/graphs/Delft.csv",
+    "G": "data/Nootdorp.graphml",
+    "skim": "data/Nootdorp.csv",
     "_ipython_display_": {},
     "_repr_mimebundle_": {},
     "_repr_html_": {},

@@ -1,11 +1,10 @@
 ################################################################################
-# Module: platform.py
+# Module: transport_platform.py
 # Platform agent
 # Rafal Kucharski @ TU Delft
 ################################################################################
-
-
-from .driver import driverEvent
+from .decisions import Offer, OfferStatus
+from .driver import driverEvent, VehicleAgent
 from .traveller import travellerEvent
 import simpy
 import random
@@ -129,7 +128,7 @@ class PlatformAgent(object):
         :return:
         """
         offer = self.offers[offer_id]
-        offer['status'] = -1
+        offer['status'] = OfferStatus.REJECTED_BY_TRAVELLER
         veh = self.sim.vehs[offer['veh_id']]
         veh.update(event=driverEvent.IS_REJECTED_BY_TRAVELLER)
         self.tabu.append((offer['veh_id'], offer_id))  # they are unmatchable
@@ -147,9 +146,9 @@ class PlatformAgent(object):
         :param offer_id:
         :return:
         """
-        offer = self.offers[offer_id]
-        offer['status'] = -1
-        veh = self.sim.vehs[offer['veh_id']]
+        offer: Offer = self.offers[offer_id]
+        offer['status'] = OfferStatus.ACCEPTED
+        veh: VehicleAgent = self.sim.vehs[offer['veh_id']]
 
         for i in offer['simpaxes']:
             self.sim.pax[i].update(event=travellerEvent.ACCEPTS_OFFER)
@@ -161,6 +160,7 @@ class PlatformAgent(object):
 
         # veh.request = request  # assign request to vehicles
         veh.schedule = self.sim.pax[offer['simpaxes'][0]].schedule
+        veh.total_income += offer['fare']
         # simpax.found_veh.succeed()  # raise the event for passenger
         # simpax.veh = vehicle  # assigne the vehicle to passenger
 

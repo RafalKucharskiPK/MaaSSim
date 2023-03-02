@@ -1,9 +1,9 @@
 {
   "NAME": "default",
   "city": "Delft, Netherlands",
-  "nP": 20,
-  "nV": 5,
-  "user_controlled_vehicles_count": 0,
+  "nP": 2000,
+  "nV": 10,
+  "user_controlled_vehicles_count": 1,
   "times": {
     "request": 15,
     "transaction": 20,
@@ -18,11 +18,8 @@
   },
   "t0": "17:00",
   "paths": {
-    "main": "/Users/rkucharski/Documents/GitHub/MaaSSim",
-    "data": "/Users/rkucharski/Documents/GitHub/MaaSSim/data",
-    "params": "/Users/rkucharski/Documents/GitHub/MaaSSim/data/configs",
-    "G": "../../data/graphs/Delft.graphml",
-    "skim": "../../data/graphs/Delft.csv",
+    "G": "data/graphs/Delft.graphml",
+    "skim": "data/graphs/Delft.csv",
     "_ipython_display_": {},
     "_repr_mimebundle_": {},
     "_repr_html_": {},
@@ -38,7 +35,7 @@
   "dist_threshold": 100000,
   "big_time": 10,
   "sleep": false,
-  "simTime": 1,
+  "simTime": 5,
   "demand_structure": {
     "origins_dispertion": -0.0003,
     "destinations_dispertion": -0.001,
